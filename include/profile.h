@@ -30,20 +30,18 @@
 #ifndef __TPROFILE_H
 #define __TPROFILE_H
 
-#include <sys/time.h>
-#include <stdint.h>
+#include <chrono>
+
+using profile_clock = std::chrono::high_resolution_clock;
 
 /**
  * Function get_tics
  * Returns the number of microseconds that have elapsed since the system was started.
  * @return uint64_t Number of microseconds.
  */
-static inline uint64_t get_tics()
+static inline profile_clock::time_point get_tics()
 {
-    struct timeval tv;
-    gettimeofday( &tv, NULL );
-
-    return (uint64_t) tv.tv_sec * 1000000ULL + (uint64_t) tv.tv_usec;
+    return profile_clock::now();
 }
 
 /**
@@ -51,16 +49,16 @@ static inline uint64_t get_tics()
  */
 struct prof_counter
 {
-    uint64_t start, end;         // Stored timer value
+    profile_clock::time_point start, end;         // Stored timer value
 
     uint64_t usecs() const
     {
-        return end - start;
+        return std::chrono::duration_cast<std::chrono::microseconds>( end - start ).count();
     }
 
     float msecs() const
     {
-        return ( end - start ) / 1000.0;
+        return std::chrono::duration_cast<std::chrono::duration<float, std::milli>>( end - start ).count();
     }
 };
 
