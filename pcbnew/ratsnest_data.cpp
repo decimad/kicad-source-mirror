@@ -1286,7 +1286,7 @@ void RN_DATA::Recalculate( int aNet )
     prof_start( &totalRealTime );
 #endif
 
-        unsigned int i;
+        int i;
 
 #ifdef USE_OPENMP
         #pragma omp parallel shared(netCount) private(i)
