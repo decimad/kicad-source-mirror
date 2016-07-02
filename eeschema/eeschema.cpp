@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2004 Jean-Pierre Charras, jaen-pierre.charras@gipsa-lab.inpg.com
  * Copyright (C) 2008-2011 Wayne Stambaugh <stambaughw@verizon.net>
- * Copyright (C) 2004-2011 KiCad Developers, see change_log.txt for contributors.
+ * Copyright (C) 2004-2016 KiCad Developers, see change_log.txt for contributors.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -184,7 +184,7 @@ static PARAM_CFG_ARRAY& cfg_params()
         // eeschema KIFACE comes in.
 
 #define CLR(x, y, z)\
-    ca.push_back( new PARAM_CFG_SETCOLOR( true, wxT( x ), &s_layerColor[y], z ) );
+    ca.emplace_back( new PARAM_CFG_SETCOLOR( true, wxT( x ), &s_layerColor[y], z ) );
 
         CLR( "ColorWireEx",             LAYER_WIRE,             GREEN )
         CLR( "ColorBusEx",              LAYER_BUS,              BLUE )

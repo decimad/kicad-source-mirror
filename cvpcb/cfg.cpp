@@ -2,7 +2,7 @@
  * This program source code file is part of KiCad, a free EDA CAD application.
  *
  * Copyright (C) 2015 Jean-Pierre Charras, jp.charras at wanadoo.fr
- * Copyright (C) 1992-2011 KiCad Developers, see AUTHORS.txt for contributors.
+ * Copyright (C) 1992-2016 KiCad Developers, see AUTHORS.txt for contributors.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -47,9 +47,9 @@ PARAM_CFG_ARRAY& CVPCB_MAINFRAME::GetProjectFileParameters()
     if( !m_projectFileParams.empty() )
         return m_projectFileParams;
 
-    m_projectFileParams.push_back( new PARAM_CFG_BASE( GROUP_PCB_LIBS, PARAM_COMMAND_ERASE ) );
+    m_projectFileParams.emplace_back( new PARAM_CFG_BASE( GROUP_PCB_LIBS, PARAM_COMMAND_ERASE ) );
 
-    m_projectFileParams.push_back( new PARAM_CFG_LIBNAME_LIST(
+    m_projectFileParams.emplace_back( new PARAM_CFG_LIBNAME_LIST(
         wxT( "EquName" ), &m_EquFilesNames, GROUP_CVP_EQU ) );
 
     return m_projectFileParams;

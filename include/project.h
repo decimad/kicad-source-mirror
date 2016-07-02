@@ -1,7 +1,7 @@
 /*
  * This program source code file is part of KiCad, a free EDA CAD application.
  *
- * Copyright (C) 2014 KiCad Developers, see CHANGELOG.TXT for contributors.
+ * Copyright (C) 2014-2016 KiCad Developers, see CHANGELOG.TXT for contributors.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -25,6 +25,7 @@
 #define PROJECT_H_
 
 #include <vector>
+#include <memory>
 #include <wx/string.h>
 #include <wx/filename.h>
 
@@ -34,7 +35,10 @@
 
 
 class wxConfigBase;
-class PARAM_CFG_ARRAY;
+
+class PARAM_CFG_BASE;
+using PARAM_CFG_ARRAY = std::vector< std::unique_ptr< PARAM_CFG_BASE > >;
+
 class FP_LIB_TABLE;
 class PART_LIBS;
 class SEARCH_STACK;

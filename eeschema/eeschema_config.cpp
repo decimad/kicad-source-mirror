@@ -396,16 +396,16 @@ PARAM_CFG_ARRAY& SCH_EDIT_FRAME::GetProjectFileParametersList()
     if( !m_projectFileParams.empty() )
         return m_projectFileParams;
 
-    m_projectFileParams.push_back( new PARAM_CFG_FILENAME( wxT( "PageLayoutDescrFile" ),
+    m_projectFileParams.emplace_back( new PARAM_CFG_FILENAME( wxT( "PageLayoutDescrFile" ),
                                         &BASE_SCREEN::m_PageLayoutDescrFileName ) );
 
-    m_projectFileParams.push_back( new PARAM_CFG_FILENAME( wxT( "PlotDirectoryName" ),
+    m_projectFileParams.emplace_back( new PARAM_CFG_FILENAME( wxT( "PlotDirectoryName" ),
                                         &m_plotDirectoryName ) );
 
-    m_projectFileParams.push_back( new PARAM_CFG_INT( wxT( "SubpartIdSeparator" ),
+    m_projectFileParams.emplace_back( new PARAM_CFG_INT( wxT( "SubpartIdSeparator" ),
                                         LIB_PART::SubpartIdSeparatorPtr(),
                                         0, 0, 126 ) );
-    m_projectFileParams.push_back( new PARAM_CFG_INT( wxT( "SubpartFirstId" ),
+    m_projectFileParams.emplace_back( new PARAM_CFG_INT( wxT( "SubpartFirstId" ),
                                         LIB_PART::SubpartFirstIdPtr(),
                                         'A', '1', 'z' ) );
 
@@ -417,18 +417,18 @@ PARAM_CFG_ARRAY& SCH_EDIT_FRAME::GetProjectFileParametersList()
                                                                GROUP_SCH_LIBS ) );
     */
 
-    m_projectFileParams.push_back( new PARAM_CFG_WXSTRING( wxT( "NetFmtName" ),
+    m_projectFileParams.emplace_back( new PARAM_CFG_WXSTRING( wxT( "NetFmtName" ),
                                             &m_netListFormat) );
-    m_projectFileParams.push_back( new PARAM_CFG_BOOL( wxT( "SpiceForceRefPrefix" ),
+    m_projectFileParams.emplace_back( new PARAM_CFG_BOOL( wxT( "SpiceForceRefPrefix" ),
                                             &m_spiceNetlistAddReferencePrefix, false ) );
-    m_projectFileParams.push_back( new PARAM_CFG_BOOL( wxT( "SpiceUseNetNumbers" ),
+    m_projectFileParams.emplace_back( new PARAM_CFG_BOOL( wxT( "SpiceUseNetNumbers" ),
                                             &m_spiceNetlistUseNetcodeAsNetname, false ) );
 
-    m_projectFileParams.push_back( new PARAM_CFG_INT( wxT( "LabSize" ),
+    m_projectFileParams.emplace_back( new PARAM_CFG_INT( wxT( "LabSize" ),
                                             &s_defaultTextSize,
                                             DEFAULT_SIZE_TEXT, 5, 1000 ) );
 
-    m_projectFileParams.push_back( new PARAM_CFG_BOOL( wxT( "ERC_TestSimilarLabels" ),
+    m_projectFileParams.emplace_back( new PARAM_CFG_BOOL( wxT( "ERC_TestSimilarLabels" ),
                                             &DIALOG_ERC::m_TestSimilarLabels, true ) );
 
     return m_projectFileParams;
@@ -546,27 +546,27 @@ PARAM_CFG_ARRAY& SCH_EDIT_FRAME::GetConfigurationSettings()
     if( !m_configSettings.empty() )
         return m_configSettings;
 
-    m_configSettings.push_back( new PARAM_CFG_BOOL( true, ShowPageLimitsEntry,
+    m_configSettings.emplace_back( new PARAM_CFG_BOOL( true, ShowPageLimitsEntry,
                                                     &m_showPageLimits, true ) );
-    m_configSettings.push_back( new PARAM_CFG_INT( true, UnitsEntry,
+    m_configSettings.emplace_back( new PARAM_CFG_INT( true, UnitsEntry,
                                                    (int*)&g_UserUnit, MILLIMETRES ) );
 
-    m_configSettings.push_back( new PARAM_CFG_BOOL( true, PrintMonochromeEntry,
+    m_configSettings.emplace_back( new PARAM_CFG_BOOL( true, PrintMonochromeEntry,
                                                     &m_printMonochrome, true ) );
-    m_configSettings.push_back( new PARAM_CFG_BOOL( true, PrintSheetRefEntry,
+    m_configSettings.emplace_back( new PARAM_CFG_BOOL( true, PrintSheetRefEntry,
                                                     &m_printSheetReference, true ) );
 
-    m_configSettings.push_back( new PARAM_CFG_INT( true, RepeatStepXEntry,
+    m_configSettings.emplace_back( new PARAM_CFG_INT( true, RepeatStepXEntry,
                                                       &m_repeatStep.x,
                                                       DEFAULT_REPEAT_OFFSET_X,
                                                       -REPEAT_OFFSET_MAX,
                                                       REPEAT_OFFSET_MAX ) );
-    m_configSettings.push_back( new PARAM_CFG_INT( true, RepeatStepYEntry,
+    m_configSettings.emplace_back( new PARAM_CFG_INT( true, RepeatStepYEntry,
                                                       &m_repeatStep.y,
                                                       DEFAULT_REPEAT_OFFSET_Y,
                                                       -REPEAT_OFFSET_MAX,
                                                       REPEAT_OFFSET_MAX ) );
-    m_configSettings.push_back( new PARAM_CFG_INT( true, RepeatLabelIncrementEntry,
+    m_configSettings.emplace_back( new PARAM_CFG_INT( true, RepeatLabelIncrementEntry,
                                                       &m_repeatDeltaLabel,
                                                       DEFAULT_REPEAT_LABEL_INC, -10, +10 ) );
     return m_configSettings;

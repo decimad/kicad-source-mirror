@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2004 Jean-Pierre Charras, jaen-pierre.charras@gipsa-lab.inpg.com
  * Copyright (C) 2008-2011 Wayne Stambaugh <stambaughw@verizon.net>
- * Copyright (C) 1992-2011 KiCad Developers, see AUTHORS.txt for contributors.
+ * Copyright (C) 1992-2016 KiCad Developers, see AUTHORS.txt for contributors.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -43,17 +43,17 @@ void wxConfigLoadParams( wxConfigBase* aCfg,
 {
     wxASSERT( aCfg );
 
-    for( const PARAM_CFG_BASE& param : aList )
+    for( const std::unique_ptr< PARAM_CFG_BASE >& param : aList )
     {
-        if( !!param.m_Group )
-            aCfg->SetPath( param.m_Group );
+        if( !!param->m_Group )
+            aCfg->SetPath( param->m_Group );
         else
             aCfg->SetPath( aGroup );
 
-        if( param.m_Setup )
+        if( param->m_Setup )
             continue;
 
-        param.ReadParam( aCfg );
+        param->ReadParam( aCfg );
     }
 }
 
@@ -62,12 +62,12 @@ void wxConfigLoadSetups( wxConfigBase* aCfg, const PARAM_CFG_ARRAY& aList )
 {
     wxASSERT( aCfg );
 
-    for( const PARAM_CFG_BASE& param : aList )
+    for( const std::unique_ptr< PARAM_CFG_BASE >& param : aList )
     {
-        if( !param.m_Setup )
+        if( !param->m_Setup )
             continue;
 
-        param.ReadParam( aCfg );
+        param->ReadParam( aCfg );
     }
 }
 
@@ -77,24 +77,24 @@ void wxConfigSaveParams( wxConfigBase* aCfg,
 {
     wxASSERT( aCfg );
 
-    for( const PARAM_CFG_BASE& param : aList )
+    for( const std::unique_ptr< PARAM_CFG_BASE >& param : aList )
     {
-        if( !!param.m_Group )
-            aCfg->SetPath( param.m_Group );
+        if( !!param->m_Group )
+            aCfg->SetPath( param->m_Group );
         else
             aCfg->SetPath( aGroup );
 
-        if( param.m_Setup )
+        if( param->m_Setup )
             continue;
 
-        if( param.m_Type == PARAM_COMMAND_ERASE )       // Erase all data
+        if( param->m_Type == PARAM_COMMAND_ERASE )       // Erase all data
         {
-            if( !!param.m_Ident )
-                aCfg->DeleteGroup( param.m_Ident );
+            if( !!param->m_Ident )
+                aCfg->DeleteGroup( param->m_Ident );
         }
         else
         {
-            param.SaveParam( aCfg );
+            param->SaveParam( aCfg );
         }
     }
 }
@@ -104,19 +104,19 @@ void wxConfigSaveSetups( wxConfigBase* aCfg, const PARAM_CFG_ARRAY& aList )
 {
     wxASSERT( aCfg );
 
-    for( const PARAM_CFG_BASE& param : aList )
+    for( const std::unique_ptr< PARAM_CFG_BASE >& param : aList )
     {
-        if( !param.m_Setup )
+        if( !param->m_Setup )
             continue;
 
-        if( param.m_Type == PARAM_COMMAND_ERASE )       // Erase all data
+        if( param->m_Type == PARAM_COMMAND_ERASE )       // Erase all data
         {
-            if( !!param.m_Ident )
-                aCfg->DeleteGroup( param.m_Ident );
+            if( !!param->m_Ident )
+                aCfg->DeleteGroup( param->m_Ident );
         }
         else
         {
-            param.SaveParam( aCfg );
+            param->SaveParam( aCfg );
         }
     }
 }

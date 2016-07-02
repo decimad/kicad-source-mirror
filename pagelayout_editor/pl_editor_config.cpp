@@ -8,6 +8,7 @@
  *
  * Copyright (C) 2013 CERN
  * @author Jean-Pierre Charras, jp.charras at wanadoo.fr
+ * Copyright (C) 2016 KiCad Developers, see AUTHORS.txt for contributors.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -97,7 +98,7 @@ PARAM_CFG_ARRAY& PL_EDITOR_FRAME::GetConfigurationSettings()
     if( !m_configSettings.empty() )
         return m_configSettings;
 
-    m_configSettings.push_back( new PARAM_CFG_INT( true, wxT( "Units" ),
+    m_configSettings.emplace_back( new PARAM_CFG_INT( true, wxT( "Units" ),
                                                    (int*) &g_UserUnit, 0, 0, 1 ) );
 
     return m_configSettings;

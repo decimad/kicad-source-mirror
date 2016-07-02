@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2007 Jean-Pierre Charras, jaen-pierre.charras@gipsa-lab.inpg.com
  * Copyright (C) 2009 Wayne Stambaugh <stambaughw@verizon.net>
- * Copyright (C) 1992-2011 KiCad Developers, see AUTHORS.txt for contributors.
+ * Copyright (C) 1992-2016 KiCad Developers, see AUTHORS.txt for contributors.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -82,22 +82,22 @@ PARAM_CFG_ARRAY& GERBVIEW_FRAME::GetConfigurationSettings()
     if( !m_configSettings.empty() )
         return m_configSettings;
 
-    m_configSettings.push_back( new PARAM_CFG_INT( true, wxT( "Units" ),
+    m_configSettings.emplace_back( new PARAM_CFG_INT( true, wxT( "Units" ),
                                                    (int*) &g_UserUnit, 0, 0, 1 ) );
 
-    m_configSettings.push_back( new PARAM_CFG_INT( true, wxT( "DrawModeOption" ),
+    m_configSettings.emplace_back( new PARAM_CFG_INT( true, wxT( "DrawModeOption" ),
                                                    &m_displayMode, 2, 0, 2 ) );
-    m_configSettings.push_back( new PARAM_CFG_SETCOLOR( true,
+    m_configSettings.emplace_back( new PARAM_CFG_SETCOLOR( true,
                                                         wxT( "DCodeColorEx" ),
                                                         &g_ColorsSettings.m_ItemsColors[
                                                             DCODES_VISIBLE],
                                                         WHITE ) );
-    m_configSettings.push_back( new PARAM_CFG_SETCOLOR( true,
+    m_configSettings.emplace_back( new PARAM_CFG_SETCOLOR( true,
                                                         wxT( "NegativeObjectsColorEx" ),
                                                         &g_ColorsSettings.m_ItemsColors[
                                                             NEGATIVE_OBJECTS_VISIBLE],
                                                         DARKGRAY ) );
-    m_configSettings.push_back( new PARAM_CFG_BOOL( true,
+    m_configSettings.emplace_back( new PARAM_CFG_BOOL( true,
                                                     wxT( "DisplayPolarCoordinates" ),
                                                     &m_DisplayOptions.m_DisplayPolarCood,
                                                     false ) );
@@ -139,7 +139,7 @@ PARAM_CFG_ARRAY& GERBVIEW_FRAME::GetConfigurationSettings()
         PARAM_CFG_SETCOLOR* prm_entry =
             new PARAM_CFG_SETCOLOR( true, keys[i], prm, color_default[i] );
 
-        m_configSettings.push_back( prm_entry );
+        m_configSettings.emplace_back( prm_entry );
     }
 
     return m_configSettings;
