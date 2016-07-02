@@ -938,10 +938,10 @@ void PART_LIBS::LibNamesAndPaths( PROJECT* aProject, bool doSave,
     PARAM_CFG_ARRAY ca;
 
     if( aPaths )
-        ca.push_back( new PARAM_CFG_FILENAME( wxT( "LibDir" ), aPaths ) );
+        ca.emplace_back( new PARAM_CFG_FILENAME( wxT( "LibDir" ), aPaths ) );
 
     if( aNames )
-        ca.push_back( new PARAM_CFG_LIBNAME_LIST( wxT( "LibName" ),  aNames, GROUP_SCH_LIBS ) );
+        ca.emplace_back( new PARAM_CFG_LIBNAME_LIST( wxT( "LibName" ),  aNames, GROUP_SCH_LIBS ) );
 
     if( doSave )
     {

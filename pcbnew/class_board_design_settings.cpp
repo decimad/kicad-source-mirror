@@ -1,7 +1,7 @@
 /*
  * This program source code file is part of KiCad, a free EDA CAD application.
  *
- * Copyright (C) 1992-2015 KiCad Developers, see AUTHORS.txt for contributors.
+ * Copyright (C) 1992-2016 KiCad Developers, see AUTHORS.txt for contributors.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -117,60 +117,60 @@ void BOARD_DESIGN_SETTINGS::AppendConfigs( PARAM_CFG_ARRAY* aResult )
 {
     m_Pad_Master.AppendConfigs( aResult );
 
-    aResult->push_back( new PARAM_CFG_INT_WITH_SCALE( wxT( "PcbTextSizeV" ),
+    aResult->emplace_back( new PARAM_CFG_INT_WITH_SCALE( wxT( "PcbTextSizeV" ),
                     &m_PcbTextSize.y,
                     Millimeter2iu( DEFAULT_TEXT_PCB_SIZE  ), TEXTS_MIN_SIZE, TEXTS_MAX_SIZE,
                     NULL, MM_PER_IU ) );
 
-    aResult->push_back( new PARAM_CFG_INT_WITH_SCALE( wxT( "PcbTextSizeH" ),
+    aResult->emplace_back( new PARAM_CFG_INT_WITH_SCALE( wxT( "PcbTextSizeH" ),
                     &m_PcbTextSize.x,
                     Millimeter2iu( DEFAULT_TEXT_PCB_SIZE  ), TEXTS_MIN_SIZE, TEXTS_MAX_SIZE,
                     NULL, MM_PER_IU ) );
 
-    aResult->push_back( new PARAM_CFG_INT_WITH_SCALE( wxT( "PcbTextThickness" ),
+    aResult->emplace_back( new PARAM_CFG_INT_WITH_SCALE( wxT( "PcbTextThickness" ),
                     &m_PcbTextWidth,
                     Millimeter2iu(DEFAULT_TEXT_PCB_THICKNESS ),
                     Millimeter2iu( 0.01 ), Millimeter2iu( 5.0 ),
                     NULL, MM_PER_IU ) );
 
-    aResult->push_back( new PARAM_CFG_INT_WITH_SCALE( wxT( "ModuleTextSizeV" ),
+    aResult->emplace_back( new PARAM_CFG_INT_WITH_SCALE( wxT( "ModuleTextSizeV" ),
                     &m_ModuleTextSize.y,
                     DEFAULT_TEXT_MODULE_SIZE, TEXTS_MIN_SIZE, TEXTS_MAX_SIZE,
                     NULL, MM_PER_IU ) );
 
-    aResult->push_back( new PARAM_CFG_INT_WITH_SCALE( wxT( "ModuleTextSizeH" ),
+    aResult->emplace_back( new PARAM_CFG_INT_WITH_SCALE( wxT( "ModuleTextSizeH" ),
                     &m_ModuleTextSize.x,
                     DEFAULT_TEXT_MODULE_SIZE, TEXTS_MIN_SIZE, TEXTS_MAX_SIZE,
                     NULL, MM_PER_IU ) );
 
-    aResult->push_back( new PARAM_CFG_INT_WITH_SCALE( wxT( "ModuleTextSizeThickness" ),
+    aResult->emplace_back( new PARAM_CFG_INT_WITH_SCALE( wxT( "ModuleTextSizeThickness" ),
                     &m_ModuleTextWidth,
                     Millimeter2iu( DEFAULT_GR_MODULE_THICKNESS ), 1, TEXTS_MAX_WIDTH,
                     NULL, MM_PER_IU ) );
 
-    aResult->push_back( new PARAM_CFG_INT_WITH_SCALE( wxT( "SolderMaskClearance" ),
+    aResult->emplace_back( new PARAM_CFG_INT_WITH_SCALE( wxT( "SolderMaskClearance" ),
                     &m_SolderMaskMargin,
                     Millimeter2iu( DEFAULT_SOLDERMASK_CLEARANCE ), 0, Millimeter2iu( 1.0 ),
                     NULL, MM_PER_IU ) );
 
-    aResult->push_back( new PARAM_CFG_INT_WITH_SCALE( wxT( "SolderMaskMinWidth" ),
+    aResult->emplace_back( new PARAM_CFG_INT_WITH_SCALE( wxT( "SolderMaskMinWidth" ),
                     &m_SolderMaskMinWidth,
                     Millimeter2iu( DEFAULT_SOLDERMASK_MIN_WIDTH ), 0, Millimeter2iu( 0.5 ),
                     NULL, MM_PER_IU ) );
 
-    aResult->push_back( new PARAM_CFG_INT_WITH_SCALE( wxT( "DrawSegmentWidth" ),
+    aResult->emplace_back( new PARAM_CFG_INT_WITH_SCALE( wxT( "DrawSegmentWidth" ),
                     &m_DrawSegmentWidth,
                     Millimeter2iu( DEFAULT_GRAPHIC_THICKNESS ),
                     Millimeter2iu( 0.01 ), Millimeter2iu( 5.0 ),
                     NULL, MM_PER_IU ) );
 
-    aResult->push_back( new PARAM_CFG_INT_WITH_SCALE( wxT( "BoardOutlineThickness" ),
+    aResult->emplace_back( new PARAM_CFG_INT_WITH_SCALE( wxT( "BoardOutlineThickness" ),
                     &m_EdgeSegmentWidth,
                     Millimeter2iu( DEFAULT_PCB_EDGE_THICKNESS ),
                     Millimeter2iu( 0.01 ), Millimeter2iu( 5.0 ),
                     NULL, MM_PER_IU ) );
 
-    aResult->push_back( new PARAM_CFG_INT_WITH_SCALE( wxT( "ModuleOutlineThickness" ),
+    aResult->emplace_back( new PARAM_CFG_INT_WITH_SCALE( wxT( "ModuleOutlineThickness" ),
                     &m_ModuleSegmentWidth,
                     Millimeter2iu( DEFAULT_GR_MODULE_THICKNESS ),
                     Millimeter2iu( 0.01 ), Millimeter2iu( 5.0 ),

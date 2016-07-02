@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2004 Jean-Pierre Charras, jaen-pierre.charras@gipsa-lab.inpg.com
  * Copyright (C) 2008-2011 Wayne Stambaugh <stambaughw@verizon.net>
- * Copyright (C) 1992-2011 KiCad Developers, see AUTHORS.txt for contributors.
+ * Copyright (C) 1992-2016 KiCad Developers, see AUTHORS.txt for contributors.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -33,9 +33,9 @@
 
 #include <wx/confbase.h>
 #include <wx/fileconf.h>
-#include <boost/ptr_container/ptr_vector.hpp>
 #include <colors.h>
 #include <limits>
+#include <memory>
 
 /// Names of sub sections where to store project info in *.pro project config files
 #define GROUP_PCB           wxT( "/pcbnew" )            /// parameters for Pcbnew/Modedit
@@ -301,10 +301,7 @@ public:
 
 
 /** A list of parameters type */
-//typedef boost::ptr_vector<PARAM_CFG_BASE> PARAM_CFG_ARRAY;
-class  PARAM_CFG_ARRAY : public boost::ptr_vector<PARAM_CFG_BASE>
-{
-};
+using PARAM_CFG_ARRAY = std::vector< std::unique_ptr< PARAM_CFG_BASE > >;
 
 
 /**
