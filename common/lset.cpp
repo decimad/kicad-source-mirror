@@ -25,6 +25,7 @@
 
 #include <stdarg.h>
 #include <assert.h>
+#include <algorithm>
 
 #include <layers_id_colors_and_visibility.h>
 #include <class_board.h>
@@ -229,9 +230,7 @@ std::string LSET::FmtBin() const
 {
     std::string ret;
 
-    int     bit_count = size();
-
-    for( int bit=0;  bit<bit_count;  ++bit )
+    for( int bit = 0;  bit < size();  ++bit )
     {
         if( bit )
         {
@@ -255,20 +254,15 @@ std::string LSET::FmtHex() const
 
     static const char hex[] = "0123456789abcdef";
 
-    int     nibble_count = ( size() + 3 ) / 4;
-
-    for( int nibble=0;  nibble<nibble_count;  ++nibble )
+    for( size_t bit = 0; bit < size(); bit += 4 )
     {
         unsigned ndx = 0;
 
         // test 4 consecutive bits and set ndx to 0-15:
-        for( int nibble_bit=0;  nibble_bit<4;  ++nibble_bit )
-        {
-            if( (*this)[nibble_bit + nibble*4] )
-                ndx |= (1 << nibble_bit);
-        }
+        for( size_t i = bit; i < std::min<size_t>( bit + 4, size() ); ++i )
+            ndx |= operator[]( i ) << (i & 3);
 
-        if( nibble && !( nibble % 8 ) )
+        if( bit && bit % (8 * 4) == 0 )
             ret += '_';
 
         assert( ndx < DIM( hex ) );
@@ -281,25 +275,21 @@ std::string LSET::FmtHex() const
 }
 
 
-int LSET::ParseHex( const char* aStart, int aCount )
+size_t LSET::ParseHex( const char* aStart, size_t aCount )
 {
     LSET tmp;
+    size_t index = aCount;
 
-    const char* rstart = aStart + aCount - 1;
-    const char* rend   = aStart - 1;
-
-    const int bitcount = size();
-
-    int nibble_ndx = 0;
-
-    while( rstart > rend )
+    /// @todo Even the old version parses "_" to a set of zeros.
+    for( size_t bit = 0; bit < size() && index > 0; )
     {
-        int cc = *rstart--;
+        // parse in reverse order!
+        unsigned int cc = aStart[--index];
 
         if( cc == '_' )
             continue;
 
-        int nibble;
+        unsigned int nibble;
 
         if( cc >= '0' && cc <= '9' )
             nibble = cc - '0';
@@ -310,21 +300,13 @@ int LSET::ParseHex( const char* aStart, int aCount )
         else
             break;
 
-        int bit = nibble_ndx * 4;
+        for( size_t i = bit; i < std::min<size_t>( bit + 4, size() ); ++i )
+            tmp.set( i, (nibble & (1 << (i & 3))) != 0 );
 
-        for( int ndx=0; bit<bitcount && ndx<4; ++bit, ++ndx )
-            if( nibble & (1<<ndx) )
-                tmp.set( bit );
-
-        if( bit >= bitcount )
-            break;
-
-        ++nibble_ndx;
+        bit += 4;
     }
 
-    int byte_count = aStart + aCount - 1 - rstart;
-
-    assert( byte_count >= 0 );
+    size_t byte_count = aCount - index;
 
     if( byte_count > 0 )
         *this = tmp;

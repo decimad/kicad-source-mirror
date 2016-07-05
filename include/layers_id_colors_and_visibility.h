@@ -365,9 +365,9 @@ public:
      * with those given in the input string.  Parsing stops at the first
      * non hex ASCII byte, except that marker bytes output from FmtHex are
      * not terminators.
-     * @return int - number of bytes consumed
+     * @return size_t - number of bytes consumed
      */
-    int ParseHex( const char* aStart, int aCount );
+    size_t ParseHex( const char* aStart, size_t aCount );
 
     /**
      * Function FmtBin
