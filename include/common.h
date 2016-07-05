@@ -32,8 +32,11 @@
 #ifndef INCLUDE__COMMON_H_
 #define INCLUDE__COMMON_H_
 
-#include <vector>
+#include <vector>   /// @todo Not used throughout this header, arguably doesn't belong here.
 #include <boost/cstdint.hpp>
+
+#include <cstddef>
+using std::size_t;   // better be defensive.
 
 #include <wx/wx.h>
 #include <wx/confbase.h>
@@ -123,16 +126,11 @@ enum pseudokeys {
 
 #if !defined( DEBUG )
 
-/// KiROUND: a function so v is not evaluated twice.  Unfortunately, compiler
-/// is unable to pre-compute constants using this.
-static inline int KiROUND( double v )
+/// KiROUND: round double to integer, no argument range check in release build.
+constexpr int KiROUND( double v )
 {
-    return int( v < 0 ? v - 0.5 : v + 0.5 );
+    return static_cast<int>( v < 0 ? v - 0.5 : v + 0.5 );
 }
-
-/// KIROUND: a macro so compiler can pre-compute constants.  Use this with compile
-/// time constants rather than the inline function above.
-#define KIROUND( v )    int( (v) < 0 ? (v) - 0.5 : (v) + 0.5 )
 
 #else
 
@@ -154,9 +152,6 @@ static inline int kiRound_( double v, int line, const char* filename )
 
 #define KiROUND( v )    kiRound_( v, __LINE__, __FILE__ )
 
-// in Debug build, use the overflow catcher since code size is immaterial
-#define KIROUND( v )    KiROUND( v )
-
 #endif
 
 //-----</KiROUND KIT>-----------------------------------------------------------
@@ -164,10 +159,10 @@ static inline int kiRound_( double v, int line, const char* filename )
 
 
 /// Convert mm to mils.
-inline int Mm2mils( double x ) { return KiROUND( x * 1000./25.4 ); }
+constexpr int Mm2mils( double x ) { return KiROUND( x * 1000./25.4 ); }
 
 /// Convert mils to mm.
-inline int Mils2mm( double x ) { return KiROUND( x * 25.4 / 1000. ); }
+constexpr int Mils2mm( double x ) { return KiROUND( x * 25.4 / 1000. ); }
 
 
 enum EDA_UNITS_T {
@@ -201,6 +196,7 @@ public:
 private:
     void setUserLocale( const char* aUserLocale );
 
+    /// @todo Everybody includes <atomic> because if this implementation detail.
     // allow for nesting of LOCALE_IO instantiations
     static std::atomic<unsigned int> m_c_count;
 
