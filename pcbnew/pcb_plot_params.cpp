@@ -377,6 +377,7 @@ void PCB_PLOT_PARAMS_PARSER::Parse( PCB_PLOT_PARAMS* aPcbPlotParams )
                 else if( cur.find_first_of( "0x" ) == 0 )   // pretty ver. 4.
                 {
                     // skip the leading 2 0x bytes.
+                    assert( cur.size() >= 2 );  // implicit assumption now explicit.
                     aPcbPlotParams->m_layerSelection.ParseHex( cur.c_str()+2, cur.size()-2 );
                 }
                 else
