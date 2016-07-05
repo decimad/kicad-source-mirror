@@ -1,7 +1,7 @@
 /*
  * This program source code file is part of KiCad, a free EDA CAD application.
  *
- * Copyright (C) 2014 KiCad Developers, see AUTHORS.txt for contributors.
+ * Copyright (C) 2014-2016 KiCad Developers, see AUTHORS.txt for contributors.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -34,6 +34,7 @@
 
 #include <search_stack.h>
 
+#include <memory>
 class wxConfigBase;
 
 /**
@@ -52,13 +53,13 @@ struct BIN_MOD
     void Init();
     void End();
 
-    const char*         m_name;             ///< name of this binary module, static C string.
+    const char*                     m_name;   ///< name of this binary module, static C string.
+    std::unique_ptr< wxConfigBase > m_config; ///< maybe from $HOME/.${m_name}
 
-    wxConfigBase*       m_config;           ///< maybe from $HOME/.${m_name}
-    wxFileHistory       m_history;
-    wxString            m_help_file;
+    wxFileHistory   m_history;
+    wxString        m_help_file;
 
-    SEARCH_STACK        m_search;
+    SEARCH_STACK    m_search;
 
 
 };

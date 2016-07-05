@@ -2,7 +2,7 @@
  * This program source code file is part of KICAD, a free EDA CAD application.
  *
  * Copyright (C) 1992-2010 jean-pierre.charras
- * Copyright (C) 1992-2015 Kicad Developers, see change_log.txt for contributors.
+ * Copyright (C) 1992-2016 Kicad Developers, see authors.txt for contributors.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -80,7 +80,8 @@ private:
     wxString        m_ConvertedFileName;
     wxSize          m_frameSize;
     wxPoint         m_framePos;
-    wxConfigBase*   m_config;
+
+    std::unique_ptr< wxConfigBase > m_config;
 
 public:
     BM2CMP_FRAME( KIWAY* aKiway, wxWindow* aParent );
@@ -206,6 +207,7 @@ BM2CMP_FRAME::BM2CMP_FRAME( KIWAY* aKiway, wxWindow* aParent ) :
 
 BM2CMP_FRAME::~BM2CMP_FRAME()
 {
+    /// @todo Should the config really not be written if BM2CMP is iconized?
     if( !m_config || IsIconized() )
         return;
 
@@ -223,7 +225,8 @@ BM2CMP_FRAME::~BM2CMP_FRAME()
     m_config->Write( KEYWORD_LAST_FORMAT,  m_radioBoxFormat->GetSelection() );
     m_config->Write( KEYWORD_LAST_MODLAYER,  m_radio_PCBLayer->GetSelection() );
 
-    delete m_config;
+    m_config->Flush();
+    m_config.reset();
 
     /* This needed for OSX: avoids further OnDraw processing after this
      * destructor and before the native window is destroyed

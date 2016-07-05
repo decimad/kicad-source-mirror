@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2004-2015 Jean-Pierre Charras, jaen-pierre.charras@gipsa-lab.inpg.com
  * Copyright (C) 2008-2015 Wayne Stambaugh <stambaughw@verizon.net>
- * Copyright (C) 1992-2015 KiCad Developers, see AUTHORS.txt for contributors.
+ * Copyright (C) 1992-2016 KiCad Developers, see AUTHORS.txt for contributors.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -283,7 +283,6 @@ PGM_BASE::PGM_BASE()
 {
     m_pgm_checker = NULL;
     m_locale = NULL;
-    m_common_settings = NULL;
 
     m_show_env_var_dialog = true;
 
@@ -303,9 +302,13 @@ void PGM_BASE::Destroy()
 {
     // unlike a normal destructor, this is designed to be called more than once safely:
 
-    delete m_common_settings;
-    m_common_settings = 0;
+    if( m_common_settings )
+    {
+        m_common_settings->Flush();
+        m_common_settings.reset();
+    }
 
+    /// @todo Use smart pointers for these too.
     delete m_pgm_checker;
     m_pgm_checker = 0;
 
