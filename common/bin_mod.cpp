@@ -2,7 +2,7 @@
  * This program source code file is part of KiCad, a free EDA CAD application.
  *
  * Copyright (C) 2014 CERN
- * Copyright (C) 2014 KiCad Developers, see CHANGELOG.TXT for contributors.
+ * Copyright (C) 2014-2016 KiCad Developers, see CHANGELOG.TXT for contributors.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -27,8 +27,7 @@
 
 
 BIN_MOD::BIN_MOD( const char* aName ) :
-    m_name( aName ),
-    m_config( 0 )
+    m_name( aName )
 {
 }
 
@@ -55,11 +54,8 @@ void BIN_MOD::End()
     if( m_config )
     {
         m_history.Save( *m_config );
-
-        // Deleting a wxConfigBase writes its contents to disk if changed.
-        // Might be NULL if called twice, in which case nothing happens.
-        delete m_config;
-        m_config = 0;
+        m_config->Flush();
+        m_config.reset();
     }
 }
 

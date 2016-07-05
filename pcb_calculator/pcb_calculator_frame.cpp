@@ -2,7 +2,7 @@
  * This program source code file is part of KICAD, a free EDA CAD application.
  *
  * Copyright (C) 1992-2015 jean-pierre.charras
- * Copyright (C) 1992-2015 Kicad Developers, see change_log.txt for contributors.
+ * Copyright (C) 1992-2016 Kicad Developers, see change_log.txt for contributors.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -83,15 +83,15 @@ PCB_CALCULATOR_FRAME::PCB_CALCULATOR_FRAME( KIWAY* aKiway, wxWindow* aParent ) :
     m_attenuator_list.push_back( new ATTENUATOR_SPLITTER() );
     m_currAttenuator = m_attenuator_list[0];
 
-    wxConfigBase* config = GetNewConfig( Pgm().App().GetAppName() );
-    LoadSettings( config );
+    std::unique_ptr< wxConfigBase > config = GetNewConfig( Pgm().App().GetAppName() );
+    LoadSettings( config.get() );
 
     ReadDataFile();
 
     TranslineTypeSelection( m_currTransLineType );
     m_TranslineSelection->SetSelection( m_currTransLineType );
 
-    TW_Init( config );
+    TW_Init( config.get() );
 
     SetAttenuator( m_AttenuatorsSelection->GetSelection() );
 

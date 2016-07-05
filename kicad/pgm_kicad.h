@@ -2,7 +2,7 @@
  * This program source code file is part of KiCad, a free EDA CAD application.
  *
  * Copyright (C) 2014 SoftPLC Corporation, Dick Hollenbeck <dick@softplc.com>
- * Copyright (C) 2014 KiCad Developers, see CHANGELOG.TXT for contributors.
+ * Copyright (C) 2014-2016 KiCad Developers, see CHANGELOG.TXT for contributors.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -55,7 +55,7 @@ public:
 
     wxFileHistory&  GetFileHistory()            { return m_bm.m_history; }
 
-    wxConfigBase*   PgmSettings()               { return m_bm.m_config; }
+    wxConfigBase*   PgmSettings()               { return m_bm.m_config.get(); }
 
     SEARCH_STACK&   SysSearch()                 { return m_bm.m_search; }
 

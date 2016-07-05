@@ -43,6 +43,7 @@
 #include <colors.h>
 
 #include <atomic>
+#include <memory>
 
 
 class wxAboutDialogInfo;
@@ -379,10 +380,10 @@ const wxString PrePendPath( const wxString& aEnvVar, const wxString& aPriorityPa
  *
  * @param aProgName is the name of the program calling this function - can be obtained by
  *  calling Pgm().App().GetAppName().  This will be the actual file name of the config file.
- * @return A pointer to a new wxConfigBase derived object is returned.  The caller is in charge
- *  of deleting it.
+ * @return A std::unique_pointer to a new wxConfigBase derived object is returned. Caller
+ *  assumes ownership.
  */
-wxConfigBase* GetNewConfig( const wxString& aProgName );
+std::unique_ptr< wxConfigBase > GetNewConfig( const wxString& aProgName );
 
 /**
  * Function GetKicadLockFilePath

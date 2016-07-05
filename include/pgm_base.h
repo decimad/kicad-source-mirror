@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2004-2015 Jean-Pierre Charras, jaen-pierre.charras@gipsa-lab.inpg.com
  * Copyright (C) 2008-2015 Wayne Stambaugh <stambaughw@verizon.net>
- * Copyright (C) 1992-2015 KiCad Developers, see AUTHORS.txt for contributors.
+ * Copyright (C) 1992-2016 KiCad Developers, see AUTHORS.txt for contributors.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -31,11 +31,11 @@
 #ifndef  PGM_BASE_H_
 #define  PGM_BASE_H_
 
+#include <memory>
 #include <map>
 #include <wx/filename.h>
 #include <search_stack.h>
 #include <wx/gdicmn.h>
-
 
 class wxConfigBase;
 class wxSingleInstanceChecker;
@@ -106,6 +106,9 @@ class PGM_BASE
 {
 public:
     PGM_BASE();
+
+	// @todo: Add virtual or comment that it will never be destroyed through a base
+	//  class reference.
     ~PGM_BASE();
 
     /**
@@ -127,7 +130,7 @@ public:
 
     //----<Cross Module API>-----------------------------------------------------
 
-    VTBL_ENTRY wxConfigBase* CommonSettings() const                 { return m_common_settings; }
+    VTBL_ENTRY wxConfigBase* CommonSettings() const                 { return m_common_settings.get(); }
 
     VTBL_ENTRY void SetEditorName( const wxString& aFileName );
 
@@ -317,7 +320,7 @@ protected:
 
     /// Configuration settings common to all KiCad program modules,
     /// like as in $HOME/.kicad_common
-    wxConfigBase*   m_common_settings;
+    std::unique_ptr< wxConfigBase > m_common_settings;
 
     /// full path to this program
     wxString        m_bin_dir;
