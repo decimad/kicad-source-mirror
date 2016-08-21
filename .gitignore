@@ -54,3 +54,10 @@ bitmaps_png/png*
 bitmaps_png/tmp
 common/pcb_keywords.cpp
 include/pcb_lexer.h
+.vscode/.BROWSE.VC.DB
+pcbnew/.vs/pcbnew/v14/.suo
+pcbnew/pcbnew.sln
+pcbnew/pcbnew.VC.db
+pcbnew/pcbnew.vcxproj
+pcbnew/pcbnew.vcxproj.filters
+pcbnew/pcbnew.vcxproj.user

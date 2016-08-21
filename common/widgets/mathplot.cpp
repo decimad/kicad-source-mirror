@@ -49,9 +49,9 @@
 #include <ctime>    // used for representation of x axes involving date
 
 // Memory leak debugging
-#ifdef _DEBUG
-#define new DEBUG_NEW
-#endif
+//#ifdef _DEBUG
+//#define new DEBUG_NEW
+//#endif
 
 // Legend margins
 #define mpLEGEND_MARGIN     5

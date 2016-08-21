@@ -36,6 +36,7 @@
 #include <colors.h>
 #include <limits>
 #include <memory>
+#include <vector>
 
 /// Names of sub sections where to store project info in *.pro project config files
 #define GROUP_PCB           wxT( "/pcbnew" )            /// parameters for Pcbnew/Modedit
