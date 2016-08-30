@@ -35,7 +35,6 @@
 #include "pns_via.h"
 #include "pns_utils.h"
 #include "pns_router.h"
-#include "pns_shove.h"
 #include "pns_utils.h"
 #include "pns_topology.h"
 
@@ -173,6 +172,7 @@ SHOVE::SHOVE_STATUS SHOVE::processHullSet( LINE& aCurrent, LINE& aObstacle,
 
         SHAPE_LINE_CHAIN path;
         LINE l( aObstacle );
+        l.ClearSegmentLinks();
 
         for( int i = 0; i < (int) aHulls.size(); i++ )
         {

@@ -545,6 +545,7 @@ bool OPTIMIZER::mergeFull( LINE* aLine )
             step--;
     }
 
+    aLine->ClearSegmentLinks(); /// @todo: WUT
     aLine->SetShape( current_path );
 
     return current_path.SegmentCount() < segs_pre;
@@ -555,8 +556,10 @@ bool OPTIMIZER::Optimize( LINE* aLine, LINE* aResult )
 {
     if( !aResult )
         aResult = aLine;
-    else
+    else {
         *aResult = *aLine;
+        aResult->ClearSegmentLinks();
+    }
 
     m_keepPostures = false;
 

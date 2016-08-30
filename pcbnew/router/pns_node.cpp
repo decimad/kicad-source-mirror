@@ -91,7 +91,6 @@ NODE::~NODE()
             delete *i;
     }
 
-    releaseGarbage();
     unlinkParent();
 
     delete m_index;
@@ -532,7 +531,7 @@ const ITEM_SET NODE::HitTest( const VECTOR2I& aPoint ) const
 }
 
 
-void NODE::addSolid( SOLID* aSolid )
+void NODE::addSolidIndex( SOLID* aSolid )
 {
     linkJoint( aSolid->Pos(), aSolid->Layers(), aSolid->Net(), aSolid );
     m_index->Add( aSolid );
@@ -541,10 +540,10 @@ void NODE::addSolid( SOLID* aSolid )
 void NODE::Add( std::unique_ptr< SOLID > aSolid )
 {
     aSolid->SetOwner( this );
-    addSolid( aSolid.release() );
+    addSolidIndex( aSolid.release() );
 }
 
-void NODE::addVia( VIA* aVia )
+void NODE::addViaIndex( VIA* aVia )
 {
     linkJoint( aVia->Pos(), aVia->Layers(), aVia->Net(), aVia );
     m_index->Add( aVia );
@@ -553,7 +552,7 @@ void NODE::addVia( VIA* aVia )
 void NODE::Add( std::unique_ptr< VIA > aVia )
 {
     aVia->SetOwner( this );
-    addVia( aVia.release() );
+    addViaIndex( aVia.release() );
 }
 
 void NODE::Add( LINE& aLine, bool aAllowRedundant )
@@ -583,9 +582,10 @@ void NODE::Add( LINE& aLine, bool aAllowRedundant )
             }
         }
     }
+    aLine.SetOwner( this );
 }
 
-void NODE::addSegment( SEGMENT* aSeg )
+void NODE::addSegmentIndex( SEGMENT* aSeg )
 {
     linkJoint( aSeg->Seg().A, aSeg->Layers(), aSeg->Net(), aSeg );
     linkJoint( aSeg->Seg().B, aSeg->Layers(), aSeg->Net(), aSeg );
@@ -605,7 +605,7 @@ void NODE::Add( std::unique_ptr< SEGMENT > aSegment, bool aAllowRedundant )
         return;
 
     aSegment->SetOwner( this );
-    addSegment( aSegment.release() );
+    addSegmentIndex( aSegment.release() );
 }
 
 void NODE::Add( std::unique_ptr< ITEM > aItem, bool aAllowRedundant )
@@ -636,21 +636,18 @@ void NODE::Add( std::unique_ptr< ITEM > aItem, bool aAllowRedundant )
 
 void NODE::doRemove( ITEM* aItem )
 {
-    // case 1: removing an item that is stored in the root node from any branch:
-    // mark it as overridden, but do not remove
-    if( aItem->BelongsTo( m_root ) && !isRoot() )
+    // Can't remove items in non-leaf-revisions.
+    assert( !m_children.size() );
+
+    // Can't remove items from child-revisions here
+    assert( aItem->Owner()->Depth() <= Depth() );
+
+    if( aItem->Owner() == this ) {
+        delete aItem;
+    } else {
+        // if the item doesn't belong to this node, it must
+        // have been added in an ancestor revision.
         m_override.insert( aItem );
-
-    // case 2: the item belongs to this branch or a parent, non-root branch,
-    // or the root itself and we are the root: remove from the index
-    else if( !aItem->BelongsTo( m_root ) || isRoot() )
-        m_index->Remove( aItem );
-
-    // the item belongs to this particular branch: un-reference it
-    if( aItem->BelongsTo( this ) )
-    {
-        aItem->SetOwner( NULL );
-        m_root->m_garbageItems.insert( aItem );
     }
 }
 
@@ -659,6 +656,8 @@ void NODE::removeSegmentIndex( SEGMENT* aSeg )
 {
     unlinkJoint( aSeg->Seg().A, aSeg->Layers(), aSeg->Net(), aSeg );
     unlinkJoint( aSeg->Seg().B, aSeg->Layers(), aSeg->Net(), aSeg );
+
+    m_index->Remove( aSeg );
 }
 
 void NODE::removeViaIndex( VIA* aVia )
@@ -706,11 +705,14 @@ void NODE::removeViaIndex( VIA* aVia )
         if( item != aVia )
             linkJoint( p, item->Layers(), net, item );
     }
+
+    m_index->Remove( aVia );
 }
 
 void NODE::removeSolidIndex( SOLID* aSolid )
 {
     // fixme: this fucks up the joints, but it's only used for marking colliding obstacles for the moment, so we don't care.
+    m_index->Remove( aSolid );
 }
 
 
@@ -1181,22 +1183,6 @@ void NODE::releaseChildren()
     }
 }
 
-
-void NODE::releaseGarbage()
-{
-    if( !isRoot() )
-        return;
-
-    for( ITEM* item : m_garbageItems )
-    {
-        if( !item->BelongsTo( this ) )
-            delete item;
-    }
-
-    m_garbageItems.clear();
-}
-
-
 void NODE::Commit( NODE* aNode )
 {
     if( aNode->isRoot() )
@@ -1214,7 +1200,6 @@ void NODE::Commit( NODE* aNode )
     }
 
     releaseChildren();
-    releaseGarbage();
 }
 
 

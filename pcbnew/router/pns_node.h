@@ -441,10 +441,11 @@ private:
                         int aNet, ITEM* aWhere );
 
     ///> helpers for adding/removing items
-    void addSolid( SOLID* aSeg );
-    void addSegment( SEGMENT* aSeg );
-    void addVia( VIA* aVia );
-    
+    void addSolidIndex( SOLID* aSeg );
+    void addSegmentIndex( SEGMENT* aSeg );
+    void addViaIndex( VIA* aVia );
+
+
     void removeLine( LINE& aLine );
     void removeSolidIndex( SOLID* aSeg );
     void removeSegmentIndex( SEGMENT* aSeg );
@@ -453,7 +454,6 @@ private:
     void doRemove( ITEM* aItem );
     void unlinkParent();
     void releaseChildren();
-    void releaseGarbage();
 
     bool isRoot() const
     {
@@ -501,8 +501,6 @@ private:
 
     ///> depth of the node (number of parent nodes in the inheritance chain)
     int m_depth;
-
-    boost::unordered_set<ITEM*> m_garbageItems;
 };
 
 }

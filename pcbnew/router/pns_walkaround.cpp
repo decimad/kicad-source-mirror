@@ -136,6 +136,7 @@ WALKAROUND::WALKAROUND_STATUS WALKAROUND::singleStep( LINE& aPath,
     }
 
     pnew.Simplify();
+    aPath.ClearSegmentLinks();
     aPath.SetShape( pnew );
 
     return IN_PROGRESS;
@@ -146,6 +147,9 @@ WALKAROUND::WALKAROUND_STATUS WALKAROUND::Route( const LINE& aInitialPath,
         LINE& aWalkPath, bool aOptimize )
 {
     LINE path_cw( aInitialPath ), path_ccw( aInitialPath );
+    path_cw.ClearSegmentLinks();
+    path_ccw.ClearSegmentLinks();
+
     WALKAROUND_STATUS s_cw = IN_PROGRESS, s_ccw = IN_PROGRESS;
     SHAPE_LINE_CHAIN best_path;
 
