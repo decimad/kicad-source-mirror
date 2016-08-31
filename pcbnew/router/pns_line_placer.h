@@ -63,6 +63,8 @@ public:
      */
     bool Start( const VECTOR2I& aP, ITEM* aStartItem );
 
+    void Cancel() override;
+
     /**
      * Function Move()
      *
@@ -73,7 +75,7 @@ public:
     bool Move( const VECTOR2I& aP, ITEM* aEndItem );
 
     /**
-     * Function FixRoute()
+     * Function CommitRoute()
      *
      * Commits the currently routed track to the parent node, taking
      * aP as the final end point and aEndItem as the final anchor (if provided).
@@ -81,7 +83,7 @@ public:
      * result is violating design rules - in such case, the track is only committed
      * if Settings.CanViolateDRC() is on.
      */
-    bool FixRoute( const VECTOR2I& aP, ITEM* aEndItem );
+    bool CommitRoute( const VECTOR2I& aP, ITEM* aEndItem );
 
     /**
      * Function ToggleVia()
@@ -361,8 +363,8 @@ private:
     ///> routing "tail": part of the track that has been already fixed due to collisions with obstacles
     LINE m_tail;
 
-    ///> pointer to world to search colliding items
-    NODE* m_world;
+    ///> current world state
+    NODE* m_node;
 
     ///> current routing start point (end of tail, beginning of head)
     VECTOR2I m_p_start;
@@ -370,11 +372,10 @@ private:
     ///> The shove engine
     std::unique_ptr< SHOVE > m_shove;
 
-    ///> Current world state
-    NODE* m_currentNode;
-
+    ///> Working branch
+    SCOPED_BRANCH m_workingBranch;
     ///> Postprocessed world state (including marked collisions & removed loops)
-    NODE* m_lastNode;
+    SCOPED_BRANCH m_processedBranch;
 
     SIZES_SETTINGS m_sizes;
 

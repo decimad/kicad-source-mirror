@@ -28,8 +28,7 @@ namespace PNS {
 DRAGGER::DRAGGER( ROUTER* aRouter ) :
     ALGO_BASE( aRouter )
 {
-    m_world = NULL;
-    m_lastNode = NULL;
+    m_node = nullptr;
     m_mode = DRAG_SEGMENT;
     m_draggedVia = NULL;
     m_shove = NULL;
@@ -47,7 +46,7 @@ DRAGGER::~DRAGGER()
 
 void DRAGGER::SetWorld( NODE* aWorld )
 {
-    m_world = aWorld;
+    m_node = aWorld;
 }
 
 
@@ -55,7 +54,7 @@ bool DRAGGER::startDragSegment( const VECTOR2D& aP, SEGMENT* aSeg )
 {
     int w2 = aSeg->Width() / 2;
 
-    m_draggedLine = m_world->AssembleLine( aSeg, &m_draggedSegmentIndex );
+    m_draggedLine = m_node->AssembleLine( aSeg, &m_draggedSegmentIndex );
     m_shove->SetInitialLine( m_draggedLine );
     m_lastValidDraggedLine = m_draggedLine;
     m_lastValidDraggedLine.ClearSegmentLinks();
@@ -80,7 +79,7 @@ bool DRAGGER::startDragVia( const VECTOR2D& aP, VIA* aVia )
     m_mode = DRAG_VIA;
 
     VECTOR2I p0( aVia->Pos() );
-    JOINT* jt = m_world->FindJoint( p0, aVia->Layers().Start(), aVia->Net() );
+    JOINT* jt = m_node->FindJoint( p0, aVia->Layers().Start(), aVia->Net() );
 
     if( !jt )
         return false;
@@ -91,7 +90,7 @@ bool DRAGGER::startDragVia( const VECTOR2D& aP, VIA* aVia )
         {
             int segIndex;
             SEGMENT* seg = ( SEGMENT*) item;
-            LINE l = m_world->AssembleLine( seg, &segIndex );
+            LINE l = m_node->AssembleLine( seg, &segIndex );
 
             if( segIndex != 0 )
                 l.Reverse();
@@ -106,8 +105,7 @@ bool DRAGGER::startDragVia( const VECTOR2D& aP, VIA* aVia )
 
 bool DRAGGER::Start( const VECTOR2I& aP, ITEM* aStartItem )
 {
-    m_shove.reset( new SHOVE( m_world, Router() ) );
-    m_lastNode = NULL;
+    m_shove.reset( new SHOVE( m_node, Router() ) );
     m_draggedItems.Clear();
     m_currentMode = Settings().Mode();
 
@@ -131,11 +129,7 @@ bool DRAGGER::Start( const VECTOR2I& aP, ITEM* aStartItem )
 
 bool DRAGGER::dragMarkObstacles( const VECTOR2I& aP )
 {
-    if( m_lastNode )
-    {
-        delete m_lastNode;
-        m_lastNode = NULL;
-    }
+    m_processed.Reset();
 
     switch( m_mode )
     {
@@ -150,13 +144,13 @@ bool DRAGGER::dragMarkObstacles( const VECTOR2I& aP )
         else
             dragged.DragCorner( aP, m_draggedSegmentIndex, thresh );
 
-        m_lastNode = m_shove->CurrentNode()->Branch();
+        m_processed.Reset( m_node );
 
         m_lastValidDraggedLine = dragged;
         m_lastValidDraggedLine.ClearSegmentLinks();
         m_lastValidDraggedLine.Unmark();
 
-        m_lastNode->Add( m_lastValidDraggedLine );
+        m_node->Add( m_lastValidDraggedLine );
         m_draggedItems.Clear();
         m_draggedItems.Add( m_lastValidDraggedLine );
 
@@ -165,8 +159,8 @@ bool DRAGGER::dragMarkObstacles( const VECTOR2I& aP )
 
     case DRAG_VIA: // fixme...
     {
-        m_lastNode = m_shove->CurrentNode()->Branch();
-        dumbDragVia( m_initialVia, m_lastNode, aP );
+        m_processed.Reset( m_node );
+        dumbDragVia( m_initialVia, m_node, aP );
 
         break;
     }
@@ -175,7 +169,7 @@ bool DRAGGER::dragMarkObstacles( const VECTOR2I& aP )
     if( Settings().CanViolateDRC() )
         m_dragStatus = true;
     else
-        m_dragStatus = !m_world->CheckColliding( m_draggedItems );
+        m_dragStatus = !m_node->CheckColliding( m_draggedItems );
 
     return true;
 }
@@ -193,8 +187,8 @@ void DRAGGER::dumbDragVia( VIA* aVia, NODE* aNode, const VECTOR2I& aP )
 
     m_draggedItems.Add( m_draggedVia );
 
-    m_lastNode->Remove( aVia );
-    m_lastNode->Add( std::move( via_clone ) );
+    m_node->Remove( aVia );
+    m_node->Add( std::move( via_clone ) );
 
     for( ITEM* item : m_origViaConnections.Items() )
     {
@@ -208,8 +202,8 @@ void DRAGGER::dumbDragVia( VIA* aVia, NODE* aNode, const VECTOR2I& aP )
 
             m_draggedItems.Add( draggedLine );
 
-            m_lastNode->Remove( origLine );
-            m_lastNode->Add( draggedLine );
+            m_node->Remove( origLine );
+            m_node->Add( draggedLine );
         }
     }
 }
@@ -219,11 +213,7 @@ bool DRAGGER::dragShove( const VECTOR2I& aP )
 {
     bool ok = false;
 
-    if( m_lastNode )
-    {
-        delete m_lastNode;
-        m_lastNode = NULL;
-    }
+    m_processed.Reset();
 
     switch( m_mode )
     {
@@ -248,14 +238,14 @@ bool DRAGGER::dragShove( const VECTOR2I& aP )
             ok = true;
         }
 
-        m_lastNode = m_shove->CurrentNode()->Branch();
+        m_processed.Reset( m_node );
 
         if( ok )
             m_lastValidDraggedLine = dragged;
 
         m_lastValidDraggedLine.ClearSegmentLinks();
         m_lastValidDraggedLine.Unmark();
-        m_lastNode->Add( m_lastValidDraggedLine );
+        m_node->Add( m_lastValidDraggedLine );
         m_draggedItems.Clear();
         m_draggedItems.Add( m_lastValidDraggedLine );
 
@@ -270,7 +260,7 @@ bool DRAGGER::dragShove( const VECTOR2I& aP )
         if( st == SHOVE::SH_OK || st == SHOVE::SH_HEAD_MODIFIED )
             ok = true;
 
-        m_lastNode = m_shove->CurrentNode()->Branch();
+        m_processed.Reset( m_node );
 
         if( ok )
         {
@@ -289,11 +279,12 @@ bool DRAGGER::dragShove( const VECTOR2I& aP )
 }
 
 
-bool DRAGGER::FixRoute()
+bool DRAGGER::CommitRoute()
 {
     if( m_dragStatus )
     {
-        Router()->CommitRouting( CurrentNode() );
+        m_processed.Commit();
+        Router()->CommitRouting();
         return true;
     }
 
@@ -321,7 +312,7 @@ bool DRAGGER::Drag( const VECTOR2I& aP )
 
 NODE* DRAGGER::CurrentNode() const
 {
-   return m_lastNode;
+   return m_node;
 }
 
 

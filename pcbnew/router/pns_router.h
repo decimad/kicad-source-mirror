@@ -84,9 +84,9 @@ enum ROUTER_MODE {
         virtual void SetRouter( ROUTER* aRouter ) = 0;
         virtual void SyncWorld( NODE* aNode ) = 0;
         virtual void AddItem( ITEM* aItem ) = 0;
-        virtual void RemoveItem( ITEM* aItem ) = 0;
+        virtual void RemoveItem( const ITEM* aItem ) = 0;
         virtual void DisplayItem( const ITEM* aItem, int aColor = -1, int aClearance = -1 ) = 0;
-        virtual void HideItem( ITEM* aItem ) = 0;
+        virtual void HideItem( const ITEM* aItem ) = 0;
         virtual void Commit() = 0;
 //        virtual void Abort () = 0;
 
@@ -118,6 +118,7 @@ public:
     static ROUTER* GetInstance();
 
     void ClearWorld();
+    void ResetWorld();
     void SyncWorld();
 
     void SetView( KIGFX::VIEW* aView );
@@ -125,15 +126,20 @@ public:
     bool RoutingInProgress() const;
     bool StartRouting( const VECTOR2I& aP, ITEM* aItem, int aLayer );
     void Move( const VECTOR2I& aP, ITEM* aItem );
-    bool FixRoute( const VECTOR2I& aP, ITEM* aItem );
+    bool CommitRoute( const VECTOR2I& aP, ITEM* aItem );
 
     void StopRouting();
 
     int GetClearance( const ITEM* aA, const ITEM* aB ) const;
 
-    NODE* GetWorld() const
+    const NODE* GetWorld() const
     {
-        return m_world.get();
+        return &m_node;
+    }
+
+    NODE* GetWorld()
+    {
+        return &m_node;
     }
 
     void FlipPosture();
@@ -177,7 +183,7 @@ public:
 
     ROUTING_SETTINGS& Settings() { return m_settings; }
 
-    void CommitRouting( NODE* aNode );
+    void CommitRouting();
 
     /**
      * Applies stored settings.
@@ -250,8 +256,8 @@ private:
     VECTOR2I m_currentEnd;
     RouterState m_state;
 
-    std::unique_ptr< NODE > m_world;
-    NODE*                   m_lastNode;
+    REVISION m_world;
+    NODE     m_node;
 
     std::unique_ptr< PLACEMENT_ALGO > m_placer;
     std::unique_ptr< DRAGGER >        m_dragger;

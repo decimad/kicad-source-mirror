@@ -53,7 +53,7 @@ void SHOVE::replaceItems( ITEM* aOld, std::unique_ptr< ITEM > aNew )
         m_affectedAreaSum = m_affectedAreaSum ? m_affectedAreaSum->Merge( *changed_area ) : *changed_area;
     }
 
-    m_currentNode->Replace( aOld, std::move( aNew ) );
+    m_node->Replace( aOld, std::move( aNew ) );
 }
 
 void SHOVE::replaceLine( LINE& aOld, LINE& aNew )
@@ -65,7 +65,7 @@ void SHOVE::replaceLine( LINE& aOld, LINE& aNew )
         m_affectedAreaSum = m_affectedAreaSum ? m_affectedAreaSum->Merge( *changed_area ) : *changed_area;
     }
 
-    m_currentNode->Replace( aOld, aNew );
+    m_node->Replace( aOld, aNew );
 }
 
 int SHOVE::getClearance( const ITEM* aA, const ITEM* aB ) const
@@ -73,7 +73,7 @@ int SHOVE::getClearance( const ITEM* aA, const ITEM* aB ) const
     if( m_forceClearance >= 0 )
         return m_forceClearance;
 
-    return m_currentNode->GetClearance( aA, aB );
+    return m_node->GetClearance( aA, aB );
 }
 
 
@@ -88,8 +88,7 @@ SHOVE::SHOVE( NODE* aWorld, ROUTER* aRouter ) :
     ALGO_BASE( aRouter )
 {
     m_forceClearance = -1;
-    m_root = aWorld;
-    m_currentNode = aWorld;
+    m_node = aWorld;
 
     // Initialize other temporary variables:
     m_draggedVia = NULL;
@@ -105,7 +104,7 @@ SHOVE::~SHOVE()
 
 LINE SHOVE::assembleLine( const SEGMENT* aSeg, int* aIndex )
 {
-    return m_currentNode->AssembleLine( const_cast<SEGMENT*>( aSeg ), aIndex, true );
+    return m_node->AssembleLine( const_cast<SEGMENT*>( aSeg ), aIndex, true );
 }
 
 // A dumb function that checks if the shoved line is shoved the right way, e.g.
@@ -150,7 +149,7 @@ SHOVE::SHOVE_STATUS SHOVE::walkaroundLoneVia( LINE& aCurrent, LINE& aObstacle,
 
     aShoved.SetShape( shortest );
 
-    if( m_currentNode->CheckColliding( &aShoved, &aCurrent ) )
+    if( m_node->CheckColliding( &aShoved, &aCurrent ) )
         return SH_INCOMPLETE;
 
     return SH_OK;
@@ -228,15 +227,15 @@ SHOVE::SHOVE_STATUS SHOVE::processHullSet( LINE& aCurrent, LINE& aObstacle,
             continue;
         }
 
-        bool colliding = m_currentNode->CheckColliding( &l, &aCurrent, ITEM::ANY_T, m_forceClearance );
+        bool colliding = m_node->CheckColliding( &l, &aCurrent, ITEM::ANY_T, m_forceClearance );
 
         if( ( aCurrent.Marker() & MK_HEAD ) && !colliding )
         {
-            JOINT* jtStart = m_currentNode->FindJoint( aCurrent.CPoint( 0 ), &aCurrent );
+            JOINT* jtStart = m_node->FindJoint( aCurrent.CPoint( 0 ), &aCurrent );
 
             for( ITEM* item : jtStart->LinkList() )
             {
-                if( m_currentNode->CheckColliding( item, &l ) )
+                if( m_node->CheckColliding( item, &l ) )
                     colliding = true;
             }
         }
@@ -411,14 +410,14 @@ SHOVE::SHOVE_STATUS SHOVE::onCollidingLine( LINE& aCurrent, LINE& aObstacle )
 
 SHOVE::SHOVE_STATUS SHOVE::onCollidingSolid( LINE& aCurrent, ITEM* aObstacle )
 {
-    WALKAROUND walkaround( m_currentNode, Router() );
+    WALKAROUND walkaround( m_node, Router() );
     LINE walkaroundLine( aCurrent );
 
     if( aCurrent.EndsWithVia() )
     {
         VIA vh = aCurrent.Via();
         VIA* via = NULL;
-        JOINT* jtStart = m_currentNode->FindJoint( vh.Pos(), &aCurrent );
+        JOINT* jtStart = m_node->FindJoint( vh.Pos(), &aCurrent );
 
         if( !jtStart )
             return SH_INCOMPLETE;
@@ -432,11 +431,11 @@ SHOVE::SHOVE_STATUS SHOVE::onCollidingSolid( LINE& aCurrent, ITEM* aObstacle )
             }
         }
 
-        if( via && m_currentNode->CheckColliding( via, aObstacle ) )
+        if( via && m_node->CheckColliding( via, aObstacle ) )
             return onCollidingVia( aObstacle, via );
     }
 
-    TOPOLOGY topo( m_currentNode );
+    TOPOLOGY topo( m_node );
 
     std::set<ITEM*> cluster = topo.AssembleCluster( aObstacle, aCurrent.Layers().Start() );
 
@@ -472,20 +471,20 @@ SHOVE::SHOVE_STATUS SHOVE::onCollidingSolid( LINE& aCurrent, ITEM* aObstacle )
         }
 
 
-    	WALKAROUND::WALKAROUND_STATUS status = walkaround.Route( aCurrent, walkaroundLine, false );
+        WALKAROUND::WALKAROUND_STATUS status = walkaround.Route( aCurrent, walkaroundLine, false );
 
         if( status != WALKAROUND::DONE )
             continue;
 
         walkaroundLine.ClearSegmentLinks();
         walkaroundLine.Unmark();
-    	walkaroundLine.Line().Simplify();
+        walkaroundLine.Line().Simplify();
 
-    	if( walkaroundLine.HasLoops() )
+        if( walkaroundLine.HasLoops() )
             continue;
 
-    	if( aCurrent.Marker() & MK_HEAD )
-    	{
+        if( aCurrent.Marker() & MK_HEAD )
+        {
             walkaroundLine.Mark( MK_HEAD );
 
             if( m_multiLineMode )
@@ -494,13 +493,13 @@ SHOVE::SHOVE_STATUS SHOVE::onCollidingSolid( LINE& aCurrent, ITEM* aObstacle )
             m_newHead = walkaroundLine;
         }
 
-    	sanityCheck( &aCurrent, &walkaroundLine );
+        sanityCheck( &aCurrent, &walkaroundLine );
 
         if( !m_lineStack.empty() )
         {
             LINE lastLine = m_lineStack.front();
 
-            if( m_currentNode->CheckColliding( &lastLine, &walkaroundLine ) )
+            if( m_node->CheckColliding( &lastLine, &walkaroundLine ) )
             {
                 LINE dummy( lastLine );
 
@@ -546,22 +545,29 @@ bool SHOVE::reduceSpringback( const ITEM_SET& aHeadSet )
     {
         SPRINGBACK_TAG spTag = m_nodeStack.back();
 
-        if( !spTag.m_node->CheckColliding( aHeadSet ) )
+        REVISION* old_revision = m_node->GetRevision();
+        m_node->CheckoutAncestor( spTag.m_revision );
+
+        if( !m_node->CheckColliding( aHeadSet ) )
         {
             rv = true;
-
-            delete spTag.m_node;
             m_nodeStack.pop_back();
+            m_node->ClearBranches();
         }
         else
-           break;
+        {
+            m_node->CheckoutDescendant( old_revision );
+            assert( m_node->GetRevision() == old_revision );
+            break;
+        }
+
     }
 
     return rv;
 }
 
 
-bool SHOVE::pushSpringback( NODE* aNode, const ITEM_SET& aHeadItems,
+bool SHOVE::pushSpringback( REVISION* aRevision, const ITEM_SET& aHeadItems,
                                 const COST_ESTIMATOR& aCost, const OPT_BOX2I& aAffectedArea )
 {
     SPRINGBACK_TAG st;
@@ -570,8 +576,8 @@ bool SHOVE::pushSpringback( NODE* aNode, const ITEM_SET& aHeadItems,
     if( !m_nodeStack.empty() )
         prev_area = m_nodeStack.back().m_affectedArea;
 
-    st.m_node = aNode;
-    st.m_cost = aCost;
+    st.m_revision  = aRevision;
+    st.m_cost      = aCost;
     st.m_headItems = aHeadItems;
 
     if( aAffectedArea )
@@ -593,7 +599,7 @@ SHOVE::SHOVE_STATUS SHOVE::pushVia( VIA* aVia, const VECTOR2I& aForce, int aCurr
 {
     LINE_PAIR_VEC draggedLines;
     VECTOR2I p0( aVia->Pos() );
-    JOINT* jt = m_currentNode->FindJoint( p0, aVia );
+    JOINT* jt = m_node->FindJoint( p0, aVia );
     VECTOR2I p0_pushed( p0 + aForce );
 
     if( !jt )
@@ -610,7 +616,7 @@ SHOVE::SHOVE_STATUS SHOVE::pushVia( VIA* aVia, const VECTOR2I& aForce, int aCurr
 
     while( aForce.x != 0 || aForce.y != 0 )
     {
-        JOINT* jt_next = m_currentNode->FindJoint( p0_pushed, aVia );
+        JOINT* jt_next = m_node->FindJoint( p0_pushed, aVia );
 
         if( !jt_next )
             break;
@@ -697,7 +703,7 @@ SHOVE::SHOVE_STATUS SHOVE::pushVia( VIA* aVia, const VECTOR2I& aForce, int aCurr
         }
         else
         {
-            m_currentNode->Remove( lp.first );
+            m_node->Remove( lp.first );
         }
 
 #ifdef DEBUG
@@ -765,7 +771,7 @@ SHOVE::SHOVE_STATUS SHOVE::onReverseCollidingVia( LINE& aCurrent, VIA* aObstacle
     LINE cur( aCurrent );
     cur.ClearSegmentLinks();
 
-    JOINT* jt = m_currentNode->FindJoint( aObstacleVia->Pos(), aObstacleVia );
+    JOINT* jt = m_node->FindJoint( aObstacleVia->Pos(), aObstacleVia );
     LINE shoved( aCurrent );
     shoved.ClearSegmentLinks();
 
@@ -931,7 +937,7 @@ SHOVE::SHOVE_STATUS SHOVE::shoveIteration( int aIter )
 
     for( int i = 0; i < 3; i++ )
     {
-         nearest = m_currentNode->NearestObstacle( &currentLine, search_order[i] );
+         nearest = m_node->NearestObstacle( &currentLine, search_order[i] );
 
          if( nearest )
             break;
@@ -956,7 +962,7 @@ SHOVE::SHOVE_STATUS SHOVE::shoveIteration( int aIter )
             VIA* revVia = (VIA*) ni;
             wxLogTrace( "PNS", "iter %d: reverse-collide-via", aIter );
 
-            if( currentLine.EndsWithVia() && m_currentNode->CheckColliding( &currentLine.Via(), revVia ) )
+            if( currentLine.EndsWithVia() && m_node->CheckColliding( &currentLine.Via(), revVia ) )
             {
                 st = SH_INCOMPLETE;
             }
@@ -1031,8 +1037,8 @@ SHOVE::SHOVE_STATUS SHOVE::shoveMainLoop()
 
     m_affectedAreaSum = OPT_BOX2I();
 
-    wxLogTrace( "PNS", "ShoveStart [root: %d jts, current: %d jts]", m_root->JointCount(),
-           m_currentNode->JointCount() );
+    wxLogTrace( "PNS", "ShoveStart [root: %d jts, current: %d jts]", m_node->JointCount(), // fixme
+        m_node->JointCount() );
 
     int iterLimit = Settings().ShoveIterationLimit();
     TIME_LIMIT timeLimit = Settings().ShoveTimeLimit();
@@ -1099,16 +1105,14 @@ SHOVE::SHOVE_STATUS SHOVE::ShoveLines( const LINE& aCurrentHead )
 
     reduceSpringback( headSet );
 
-    NODE* parent = m_nodeStack.empty() ? m_root : m_nodeStack.back().m_node;
+    SCOPED_BRANCH branch( m_node );
+    m_node->ClearRanks();
+    m_node->Add( head );
 
-    m_currentNode = parent->Branch();
-    m_currentNode->ClearRanks();
-    m_currentNode->Add( head );
-
-    m_currentNode->LockJoint( head.CPoint(0), &head, true );
+    m_node->LockJoint( head.CPoint(0), &head, true );
 
     if( !head.EndsWithVia() )
-        m_currentNode->LockJoint( head.CPoint( -1 ), &head, true );
+        m_node->LockJoint( head.CPoint( -1 ), &head, true );
 
     head.Mark( MK_HEAD );
     head.SetRank( 100000 );
@@ -1118,18 +1122,15 @@ SHOVE::SHOVE_STATUS SHOVE::ShoveLines( const LINE& aCurrentHead )
 
     if( head.EndsWithVia() )
     {
-        std::unique_ptr< VIA >headVia = Clone( head.Via() );
+        std::unique_ptr< VIA > headVia = Clone( head.Via() );
         headVia->Mark( MK_HEAD );
         headVia->SetRank( 100000 );
         m_logger.Log( headVia.get(), 0, "head-via" );
-        m_currentNode->Add( std::move( headVia ) );
+        m_node->Add( std::move( headVia ) );
     }
 
     if( !pushLine( head ) )
     {
-        delete m_currentNode;
-        m_currentNode = parent;
-
         return SH_INCOMPLETE;
     }
 
@@ -1137,28 +1138,31 @@ SHOVE::SHOVE_STATUS SHOVE::ShoveLines( const LINE& aCurrentHead )
 
     if( st == SH_OK )
     {
-        runOptimizer( m_currentNode );
+        runOptimizer( m_node );
 
         if( m_newHead )
-            st = m_currentNode->CheckColliding( &( *m_newHead ) ) ? SH_INCOMPLETE : SH_HEAD_MODIFIED;
+            st = m_node->CheckColliding( &( *m_newHead ) ) ? SH_INCOMPLETE : SH_HEAD_MODIFIED;
         else
-            st = m_currentNode->CheckColliding( &head ) ? SH_INCOMPLETE : SH_OK;
+            st = m_node->CheckColliding( &head ) ? SH_INCOMPLETE : SH_OK;
     }
 
-    m_currentNode->RemoveByMarker( MK_HEAD );
+    m_node->RemoveByMarker( MK_HEAD );
 
     wxLogTrace( "PNS", "Shove status : %s after %d iterations",
            ( ( st == SH_OK || st == SH_HEAD_MODIFIED ) ? "OK" : "FAILURE"), m_iter );
 
     if( st == SH_OK || st == SH_HEAD_MODIFIED )
     {
-        pushSpringback( m_currentNode, headSet, COST_ESTIMATOR(), m_affectedAreaSum );
+        // it seems inefficient, but if nothing changed then the next iteration will
+        // revert the pushed revision anyways and this way we get springing back to
+        // the root revision without additional effort (at least most of the times).
+        // Delay a proper implementation for times with less urgent problems.
+        // (and then use m_noode->GetRevision()->NumChanges() here)
+        pushSpringback( m_node->GetRevision(), headSet, COST_ESTIMATOR(), m_affectedAreaSum );
+        branch.Release();
     }
     else
     {
-        delete m_currentNode;
-
-        m_currentNode = parent;
         m_newHead = OPT_LINE();
     }
 
@@ -1201,10 +1205,9 @@ SHOVE::SHOVE_STATUS SHOVE::ShoveMultiLines( const ITEM_SET& aHeadSet )
 
     reduceSpringback( headSet );
 
-    NODE* parent = m_nodeStack.empty() ? m_root : m_nodeStack.back().m_node;
+    SCOPED_BRANCH branch( m_node );
+    m_node->ClearRanks();
 
-    m_currentNode = parent->Branch();
-    m_currentNode->ClearRanks();
     int n = 0;
 
     for( const ITEM* item : aHeadSet.CItems() )
@@ -1213,7 +1216,7 @@ SHOVE::SHOVE_STATUS SHOVE::ShoveMultiLines( const ITEM_SET& aHeadSet )
         LINE head( *headOrig );
         head.ClearSegmentLinks();
 
-        m_currentNode->Add( head );
+        m_node->Add( head );
 
         head.Mark( MK_HEAD );
         head.SetRank( 100000 );
@@ -1228,7 +1231,7 @@ SHOVE::SHOVE_STATUS SHOVE::ShoveMultiLines( const ITEM_SET& aHeadSet )
             headVia->Mark( MK_HEAD );
             headVia->SetRank( 100000 );
             m_logger.Log( headVia.get(), 0, "head-via" );
-            m_currentNode->Add( std::move( headVia ) );
+            m_node->Add( std::move( headVia ) );
         }
     }
 
@@ -1238,23 +1241,23 @@ SHOVE::SHOVE_STATUS SHOVE::ShoveMultiLines( const ITEM_SET& aHeadSet )
     st = shoveMainLoop();
 
     if( st == SH_OK )
-        runOptimizer( m_currentNode );
+        runOptimizer( m_node );
 
-    m_currentNode->RemoveByMarker( MK_HEAD );
+    m_node->RemoveByMarker( MK_HEAD );
 
     wxLogTrace( "PNS", "Shove status : %s after %d iterations",
            ( st == SH_OK ? "OK" : "FAILURE"), m_iter );
 
     if( st == SH_OK )
     {
-        pushSpringback( m_currentNode, ITEM_SET(), COST_ESTIMATOR(), m_affectedAreaSum );
+        pushSpringback( m_node->GetRevision(), ITEM_SET(), COST_ESTIMATOR(), m_affectedAreaSum );
     }
     else
     {
-        delete m_currentNode;
-        m_currentNode = parent;
+        branch.Reset();
     }
 
+    branch.Release();
     return st;
 }
 
@@ -1270,14 +1273,8 @@ SHOVE::SHOVE_STATUS SHOVE::ShoveDraggingVia( VIA* aVia, const VECTOR2I& aWhere,
     m_draggedVia = NULL;
     m_draggedViaHeadSet.Clear();
 
-    NODE* parent = m_nodeStack.empty() ? m_root : m_nodeStack.back().m_node;
-
-    m_currentNode = parent;
-
-    parent = m_nodeStack.empty() ? m_root : m_nodeStack.back().m_node;
-
-    m_currentNode = parent->Branch();
-    m_currentNode->ClearRanks();
+    SCOPED_BRANCH branch( m_node );
+    m_node->ClearRanks();
 
     aVia->Mark( MK_HEAD );
 
@@ -1285,7 +1282,7 @@ SHOVE::SHOVE_STATUS SHOVE::ShoveDraggingVia( VIA* aVia, const VECTOR2I& aWhere,
     st = shoveMainLoop();
 
     if( st == SH_OK )
-        runOptimizer( m_currentNode );
+        runOptimizer( m_node );
 
     if( st == SH_OK || st == SH_HEAD_MODIFIED )
     {
@@ -1295,7 +1292,7 @@ SHOVE::SHOVE_STATUS SHOVE::ShoveDraggingVia( VIA* aVia, const VECTOR2I& aWhere,
             *aNewVia = m_draggedVia;
         }
 
-        pushSpringback( m_currentNode, m_draggedViaHeadSet, COST_ESTIMATOR(), m_affectedAreaSum );
+        pushSpringback( m_node->GetRevision(), m_draggedViaHeadSet, COST_ESTIMATOR(), m_affectedAreaSum );
     }
     else
     {
@@ -1304,10 +1301,10 @@ SHOVE::SHOVE_STATUS SHOVE::ShoveDraggingVia( VIA* aVia, const VECTOR2I& aWhere,
             *aNewVia = nullptr;
         }
 
-        delete m_currentNode;
-        m_currentNode = parent;
+        branch.Reset();
     }
 
+    branch.Release();
     return st;
 }
 
@@ -1392,22 +1389,22 @@ void SHOVE::runOptimizer( NODE* aNode )
 
 NODE* SHOVE::CurrentNode()
 {
-    return m_nodeStack.empty() ? m_root : m_nodeStack.back().m_node;
+    return m_node;
 }
 
 
 const LINE SHOVE::NewHead() const
 {
     assert( m_newHead );
-
     return *m_newHead;
 }
 
 
 void SHOVE::SetInitialLine( LINE& aInitial )
 {
-    m_root = m_root->Branch();
-    m_root->Remove( aInitial );
+    // fixme? Add working branch?
+    m_node->BranchMove();
+    m_node->Remove( aInitial );
 }
 
 }

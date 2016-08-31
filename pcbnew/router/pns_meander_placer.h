@@ -55,11 +55,14 @@ public:
     /// @copydoc PLACEMENT_ALGO::Start()
     virtual bool Start( const VECTOR2I& aP, ITEM* aStartItem );
 
+    /// @copydoc PLACEMENT_ALGO::Cancel()
+    void Cancel() override;
+
     /// @copydoc PLACEMENT_ALGO::Move()
     virtual bool Move( const VECTOR2I& aP, ITEM* aEndItem );
 
-    /// @copydoc PLACEMENT_ALGO::FixRoute()
-    virtual bool FixRoute( const VECTOR2I& aP, ITEM* aEndItem );
+    /// @copydoc PLACEMENT_ALGO::CommitRoute()
+    virtual bool CommitRoute( const VECTOR2I& aP, ITEM* aEndItem );
 
     /// @copydoc PLACEMENT_ALGO::CurrentNode()
     NODE* CurrentNode( bool aLoopsRemoved = false ) const;
@@ -97,13 +100,14 @@ protected:
     virtual int origPathLength() const;
 
     ///> pointer to world to search colliding items
-    NODE* m_world;
+    NODE* m_node;
 
     ///> current routing start point (end of tail, beginning of head)
     VECTOR2I m_currentStart;
 
     ///> Current world state
-    NODE* m_currentNode;
+    SCOPED_BRANCH m_workingBranch;
+    SCOPED_BRANCH m_processedBranch;
 
     LINE     m_originLine;
     LINE     m_currentTrace;

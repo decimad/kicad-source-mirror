@@ -60,7 +60,7 @@ namespace PNS {
         }
     }
 
-    void CHANGE_SET::Add( const ITEM* aItem )
+    void CHANGE_SET::Add( ITEM* aItem )
     {
         auto it = std::find( m_removed_items.begin(), m_removed_items.end(), aItem );
         if( it != m_removed_items.end() )
@@ -73,7 +73,7 @@ namespace PNS {
         }
     }
 
-    void CHANGE_SET::Remove( const ITEM* aItem )
+    void CHANGE_SET::Remove( ITEM* aItem )
     {
         auto it = std::find( m_added_items.begin(), m_added_items.end(), aItem );
 
@@ -87,10 +87,11 @@ namespace PNS {
         }
     }
 
-    CHANGE_SET CHANGE_SET::FromPath( std::vector< const REVISION* > aPath )
+    CHANGE_SET CHANGE_SET::FromPath( const REVISION_PATH& aPath )
     {
         CHANGE_SET result;
-        std::reverse( aPath.begin(), aPath.end() );
+        auto copy = aPath;  // fixme
+        std::reverse( copy.begin(), copy.end() );
 
         for( auto diffstate : aPath ) {
             result.Apply( diffstate );
@@ -131,6 +132,20 @@ namespace PNS {
 
     REVISION::~REVISION()
     {
+    }
+
+    void REVISION::Clear()
+    {
+        m_added_items.clear();
+        m_removed_items.clear();
+        m_branches.clear();
+    }
+
+    CHANGE_SET REVISION::GetRevisionChanges() const
+    {
+        CHANGE_SET changes;
+        changes.Apply( this );
+        return changes;
     }
 
     void REVISION::AddItem( std::unique_ptr< ITEM > aItem )
@@ -200,6 +215,13 @@ namespace PNS {
         aDiff->m_added_items.clear();
     }
 
+    REVISION* REVISION::Revert()
+    {
+        auto result = m_parent;
+        m_parent->RemoveBranch( this );
+        return result;
+    }
+
     REVISION * REVISION::Squash()
     {
         assert( m_parent );
@@ -246,9 +268,9 @@ namespace PNS {
         return m_added_items.size() + m_removed_items.size();
     }
 
-    std::vector<const REVISION*> REVISION::Path( const REVISION * aAncestor ) const
+    REVISION_PATH REVISION::Path( const REVISION * aAncestor ) const
     {
-        std::vector< const REVISION* > result;
+        REVISION_PATH result;
         const REVISION* state = this;
 
         while( state != aAncestor )

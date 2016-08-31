@@ -71,13 +71,13 @@ public:
     bool Drag( const VECTOR2I& aP );
 
     /**
-     * Function FixRoute()
+     * Function CommitRoute()
      *
      * Checks if the result of current dragging operation is correct
      * and eventually commits it to the world.
      * @return true, if dragging finished with success.
      */
-    bool FixRoute();
+    bool CommitRoute();
 
     /**
      * Function CurrentNode()
@@ -110,8 +110,9 @@ private:
     bool startDragVia( const VECTOR2D& aP, VIA* aVia );
     void dumbDragVia( VIA* aVia, NODE* aNode, const VECTOR2I& aP );
 
-    NODE*    m_world;
-    NODE*    m_lastNode;
+    NODE* m_node;
+    SCOPED_BRANCH m_processed;
+
     DragMode m_mode;
     LINE     m_draggedLine;
     VIA*     m_draggedVia;

@@ -560,7 +560,7 @@ void ROUTER_TOOL::performRouting()
             updateEndItem( *evt );
             bool needLayerSwitch = m_router->IsPlacingVia();
 
-            if( m_router->FixRoute( m_endSnapPoint, m_endItem ) )
+            if( m_router->CommitRoute( m_endSnapPoint, m_endItem ) )
                 break;
 
             if( needLayerSwitch )
@@ -600,7 +600,7 @@ void ROUTER_TOOL::performRouting()
         {
             bool still_routing = true;
             while( still_routing )
-                still_routing = m_router->FixRoute( m_endSnapPoint, m_endItem );
+                still_routing = m_router->CommitRoute( m_endSnapPoint, m_endItem );
             break;
         }
         else if( evt->IsCancel() || evt->IsActivate() || evt->IsUndoRedo() )
@@ -771,7 +771,7 @@ void ROUTER_TOOL::performDragging()
         }
         else if( evt->IsClick( BUT_LEFT ) )
         {
-            if( m_router->FixRoute( m_endSnapPoint, m_endItem ) )
+            if( m_router->CommitRoute( m_endSnapPoint, m_endItem ) )
                 break;
         }
         else if( evt->IsCancel() || evt->IsActivate() || evt->IsUndoRedo() )
@@ -836,7 +836,7 @@ int ROUTER_TOOL::InlineDrag( const TOOL_EVENT& aEvent )
         }
         else if( evt->IsMouseUp( BUT_LEFT ) || evt->IsClick( BUT_LEFT ) )
         {
-            m_router->FixRoute( p0, NULL );
+            m_router->CommitRoute( p0, NULL );
             break;
         }
     }

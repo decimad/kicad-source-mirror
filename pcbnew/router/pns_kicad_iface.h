@@ -49,10 +49,10 @@ public:
     void SetView( KIGFX::VIEW* aView );
     void SyncWorld( PNS::NODE* aWorld );
     void EraseView();
-    void HideItem( PNS::ITEM* aItem );
+    void HideItem( const PNS::ITEM* aItem );
     void DisplayItem( const PNS::ITEM* aItem, int aColor = 0, int aClearance = 0 );
     void AddItem( PNS::ITEM* aItem );
-    void RemoveItem( PNS::ITEM* aItem );
+    void RemoveItem( const PNS::ITEM* aItem );
     void Commit();
 
     void UpdateNet( int aNetCode );

@@ -101,10 +101,10 @@ bool TOPOLOGY::LeadingRatLine( const LINE* aTrack, SHAPE_LINE_CHAIN& aRatLine )
     if( !track.PointCount() )
         return false;
 
-    std::unique_ptr<NODE> tmpNode( m_world->Branch() );
-    tmpNode->Add( track );
+    SCOPED_BRANCH temp_branch( m_world );
+    m_world->Add( track );
 
-    JOINT* jt = tmpNode->FindJoint( track.CPoint( -1 ), &track );
+    JOINT* jt = m_world->FindJoint( track.CPoint( -1 ), &track );
 
     if( !jt )
        return false;
@@ -117,7 +117,7 @@ bool TOPOLOGY::LeadingRatLine( const LINE* aTrack, SHAPE_LINE_CHAIN& aRatLine )
     {
         int anchor;
 
-        TOPOLOGY topo( tmpNode.get() );
+        TOPOLOGY topo( m_world );
         ITEM* it = topo.NearestUnconnectedItem( jt, &anchor );
 
         if( !it )

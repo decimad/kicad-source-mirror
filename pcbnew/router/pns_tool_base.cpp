@@ -317,7 +317,8 @@ void TOOL_BASE::updateEndItem( TOOL_EVENT& aEvent )
 
 void TOOL_BASE::deleteTraces( ITEM* aStartItem, bool aWholeTrack )
 {
-    NODE *node = m_router->GetWorld()->Branch();
+    auto* node = m_router->GetWorld();
+    SCOPED_BRANCH branch( node );
 
     if( !aStartItem )
         return;
@@ -335,7 +336,8 @@ void TOOL_BASE::deleteTraces( ITEM* aStartItem, bool aWholeTrack )
             node->Remove( ent.item );
     }
 
-    m_router->CommitRouting( node );
+    branch.Release();
+    m_router->CommitRouting();
 }
 
 

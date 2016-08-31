@@ -65,6 +65,7 @@ namespace PNS {
 static ROUTER* theRouter;
 
 ROUTER::ROUTER()
+    : m_node( &m_world )
 {
     theRouter = this;
 
@@ -73,7 +74,6 @@ ROUTER::ROUTER()
     m_mode = PNS_MODE_ROUTE_SINGLE;
 
     // Initialize all other variables:
-    m_lastNode = nullptr;
     m_iterLimit = 0;
     m_showInterSteps = false;
     m_snapshotIter = 0;
@@ -98,21 +98,19 @@ ROUTER::~ROUTER()
 void ROUTER::SyncWorld( )
 {
     ClearWorld();
+    m_iface->SyncWorld( &m_node );
+//    m_node.BranchMove();
+}
 
-    m_world = std::unique_ptr< NODE >( new NODE );
-    m_iface->SyncWorld( m_world.get() );
-
+void ROUTER::ResetWorld()
+{
+    m_node.RevertToRevision( &m_world );
 }
 
 void ROUTER::ClearWorld()
 {
-    if( m_world )
-    {
-        m_world->KillChildren();
-        m_world.reset();
-    }
-
     m_placer.reset();
+    m_node.RevertToRevision( &m_world );
 }
 
 
@@ -124,12 +122,7 @@ bool ROUTER::RoutingInProgress() const
 
 const ITEM_SET ROUTER::QueryHoverItems( const VECTOR2I& aP )
 {
-    if( m_state == IDLE )
-        return m_world->HitTest( aP );
-    else
-    {
-        return m_placer->CurrentNode()->HitTest( aP );
-    }
+    return m_node.HitTest( aP );
 }
 
 bool ROUTER::StartDragging( const VECTOR2I& aP, ITEM* aStartItem )
@@ -138,7 +131,7 @@ bool ROUTER::StartDragging( const VECTOR2I& aP, ITEM* aStartItem )
         return false;
 
     m_dragger.reset( new DRAGGER( this ) );
-    m_dragger->SetWorld( m_world.get() );
+    m_dragger->SetWorld( &m_node );
     m_dragger->SetDebugDecorator ( m_iface->GetDebugDecorator () );
 
     if( m_dragger->Start ( aP, aStartItem ) )
@@ -272,12 +265,12 @@ void ROUTER::updateView( NODE* aNode, ITEM_SET& aCurrent )
     if( Settings().Mode() == RM_MarkObstacles )
         markViolations( aNode, aCurrent, removed );
 
-    aNode->GetUpdatedItems( removed, added );
+    CHANGE_SET changes = CHANGE_SET::FromPath( m_node.Path( &m_world ) );
 
-    for ( auto item : added )
+    for( auto item : changes.AddedItems() )
         m_iface->DisplayItem( item );
 
-    for( auto item : removed )
+    for( auto item : changes.RemovedItems() )
         m_iface->HideItem( item );
 }
 
@@ -319,35 +312,34 @@ void ROUTER::movePlacing( const VECTOR2I& aP, ITEM* aEndItem )
 }
 
 
-void ROUTER::CommitRouting( NODE* aNode )
+void ROUTER::CommitRouting()
 {
-    NODE::ITEM_VECTOR removed, added;
+    m_node.SquashToParentRevision( &m_world );
+    CHANGE_SET changes = m_node.GetRevisionChanges();
 
-    aNode->GetUpdatedItems( removed, added );
-
-    for ( auto item : removed )
+    for ( auto item : changes.RemovedItems() )
         m_iface->RemoveItem ( item );
 
-    for ( auto item : added )
+    for ( auto item : changes.AddedItems() )
         m_iface->AddItem( item );
 
     m_iface->Commit();
-    m_world->Commit( aNode );
+    m_node.Squash();
 }
 
 
-bool ROUTER::FixRoute( const VECTOR2I& aP, ITEM* aEndItem )
+bool ROUTER::CommitRoute( const VECTOR2I& aP, ITEM* aEndItem )
 {
     bool rv = false;
 
     switch( m_state )
     {
     case ROUTE_TRACK:
-        rv = m_placer->FixRoute( aP, aEndItem );
+        rv = m_placer->CommitRoute( aP, aEndItem );
         break;
 
     case DRAG_SEGMENT:
-        rv = m_dragger->FixRoute();
+        rv = m_dragger->CommitRoute();
         break;
 
     default:
@@ -378,14 +370,18 @@ void ROUTER::StopRouting()
     if( !RoutingInProgress() )
         return;
 
+    if( m_placer ) {
+        m_placer->Cancel();
+    }
+
     m_placer.reset();
     m_dragger.reset();
 
     m_iface->EraseView();
 
     m_state = IDLE;
-    m_world->KillChildren();
-    m_world->ClearRanks();
+    m_node.RevertToRevision( &m_world );
+    m_node.ClearRanks();
 }
 
 

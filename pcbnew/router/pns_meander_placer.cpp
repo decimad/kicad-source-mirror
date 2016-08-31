@@ -33,8 +33,7 @@ namespace PNS {
 MEANDER_PLACER::MEANDER_PLACER( ROUTER* aRouter ) :
     MEANDER_PLACER_BASE( aRouter )
 {
-    m_world = NULL;
-    m_currentNode = NULL;
+    m_node = nullptr;
 
     // Init temporary variables (do not leave uninitialized members)
     m_initialSegment = NULL;
@@ -47,15 +46,15 @@ MEANDER_PLACER::~MEANDER_PLACER()
 {
 }
 
+void MEANDER_PLACER::setWorld( NODE* aNode )
+{
+    m_node = aNode;
+}
 
 NODE* MEANDER_PLACER::CurrentNode( bool aLoopsRemoved ) const
 {
-    if( !m_currentNode )
-        return m_world;
-
-    return m_currentNode;
+    return m_node;
 }
-
 
 bool MEANDER_PLACER::Start( const VECTOR2I& aP, ITEM* aStartItem )
 {
@@ -71,16 +70,17 @@ bool MEANDER_PLACER::Start( const VECTOR2I& aP, ITEM* aStartItem )
 
     p = m_initialSegment->Seg().NearestPoint( aP );
 
-    m_currentNode = NULL;
     m_currentStart = p;
 
-    m_world = Router()->GetWorld()->Branch();
-    m_originLine = m_world->AssembleLine( m_initialSegment );
+    m_node = Router()->GetWorld();
+    m_workingBranch.Reset( m_node );
 
-    TOPOLOGY topo( m_world );
+    m_originLine = m_node->AssembleLine( m_initialSegment );
+
+    TOPOLOGY topo( m_node );
     m_tunedPath = topo.AssembleTrivialPath( m_initialSegment );
 
-    m_world->Remove( m_originLine );
+    m_node->Remove( m_originLine );
 
     m_currentWidth = m_originLine.Width();
     m_currentEnd = VECTOR2I( 0, 0 );
@@ -88,6 +88,11 @@ bool MEANDER_PLACER::Start( const VECTOR2I& aP, ITEM* aStartItem )
     return true;
 }
 
+void MEANDER_PLACER::Cancel()
+{
+    m_processedBranch.Reset();
+    m_workingBranch.Reset();
+}
 
 int MEANDER_PLACER::origPathLength() const
 {
@@ -114,10 +119,7 @@ bool MEANDER_PLACER::doMove( const VECTOR2I& aP, ITEM* aEndItem, int aTargetLeng
 {
     SHAPE_LINE_CHAIN pre, tuned, post;
 
-    if( m_currentNode )
-        delete m_currentNode;
-
-    m_currentNode = m_world->Branch();
+    m_processedBranch.Reset( m_node );
 
     cutTunedLine( m_originLine.CLine(), m_currentStart, aP, pre, tuned, post );
 
@@ -188,15 +190,17 @@ bool MEANDER_PLACER::doMove( const VECTOR2I& aP, ITEM* aEndItem, int aTargetLeng
 }
 
 
-bool MEANDER_PLACER::FixRoute( const VECTOR2I& aP, ITEM* aEndItem )
+bool MEANDER_PLACER::CommitRoute( const VECTOR2I& aP, ITEM* aEndItem )
 {
-    if( !m_currentNode )
+    if( !m_processedBranch )
         return false;
 
     m_currentTrace = LINE( m_originLine, m_finalShape );
-    m_currentNode->Add( m_currentTrace );
+    m_node->Add( m_currentTrace );
 
-    Router()->CommitRouting( m_currentNode );
+    m_processedBranch.Commit();
+    m_workingBranch.Release();
+    Router()->CommitRouting();
     return true;
 }
 
@@ -205,7 +209,7 @@ bool MEANDER_PLACER::CheckFit( MEANDER_SHAPE* aShape )
 {
     LINE l( m_originLine, aShape->CLine( 0 ) );
 
-    if( m_currentNode->CheckColliding( &l ) )
+    if( m_node->CheckColliding( &l ) )
         return false;
 
     int w = aShape->Width();

@@ -58,13 +58,14 @@ bool MEANDER_SKEW_PLACER::Start( const VECTOR2I& aP, ITEM* aStartItem )
 
     p = m_initialSegment->Seg().NearestPoint( aP );
 
-    m_currentNode = NULL;
+    m_node = NULL;
     m_currentStart = p;
 
-    m_world = Router()->GetWorld( )->Branch();
-    m_originLine = m_world->AssembleLine( m_initialSegment );
+    setWorld( Router()->GetWorld() );
+    m_workingBranch.Reset( Router()->GetWorld( ) );
+    m_originLine = m_node->AssembleLine( m_initialSegment );
 
-    TOPOLOGY topo( m_world );
+    TOPOLOGY topo( m_node );
     m_tunedPath = topo.AssembleTrivialPath( m_initialSegment );
 
     if( !topo.AssembleDiffPair ( m_initialSegment, m_originPair ) )
@@ -85,7 +86,7 @@ bool MEANDER_SKEW_PLACER::Start( const VECTOR2I& aP, ITEM* aStartItem )
     m_tunedPathP = topo.AssembleTrivialPath( m_originPair.PLine().GetLink( 0 ) );
     m_tunedPathN = topo.AssembleTrivialPath( m_originPair.NLine().GetLink( 0 ) );
 
-    m_world->Remove( m_originLine );
+    m_node->Remove( m_originLine );
 
     m_currentWidth = m_originLine.Width();
     m_currentEnd = VECTOR2I( 0, 0 );

@@ -43,57 +43,19 @@ using boost::unordered_map;
 
 namespace PNS {
 
-#ifdef DEBUG
-static boost::unordered_set<NODE*> allocNodes;
-#endif
-
-NODE::NODE()
+NODE::NODE( REVISION* aRevision )
+    : m_revision( aRevision )
 {
     wxLogTrace( "PNS", "NODE::create %p", this );
     m_depth = 0;
-    m_root = this;
-    m_parent = NULL;
     m_maxClearance = 800000;    // fixme: depends on how thick traces are.
     m_ruleResolver = NULL;
-    m_index = new INDEX;
-
-#ifdef DEBUG
-    allocNodes.insert( this );
-#endif
 }
 
 
 NODE::~NODE()
 {
     wxLogTrace( "PNS", "NODE::delete %p", this );
-
-    if( !m_children.empty() )
-    {
-        wxLogTrace( "PNS", "attempting to free a node that has kids." );
-        assert( false );
-    }
-
-#ifdef DEBUG
-    if( allocNodes.find( this ) == allocNodes.end() )
-    {
-        wxLogTrace( "PNS", "attempting to free an already-free'd node." );
-        assert( false );
-    }
-
-    allocNodes.erase( this );
-#endif
-
-    m_joints.clear();
-
-    for( INDEX::ITEM_SET::iterator i = m_index->begin(); i != m_index->end(); ++i )
-    {
-        if( (*i)->BelongsTo( this ) )
-            delete *i;
-    }
-
-    unlinkParent();
-
-    delete m_index;
 }
 
 int NODE::GetClearance( const ITEM* aA, const ITEM* aB ) const
@@ -104,74 +66,175 @@ int NODE::GetClearance( const ITEM* aA, const ITEM* aB ) const
    return m_ruleResolver->Clearance( aA, aB );
 }
 
+// ================
+// Revision Methods
+// ================
 
-NODE* NODE::Branch()
+REVISION* NODE::GetRevision()
 {
-    NODE* child = new NODE;
+    return m_revision;
+}
 
-    wxLogTrace( "PNS", "NODE::branch %p (parent %p)", child, this );
+REVISION_PATH NODE::Path( REVISION* aAncestor ) const
+{
+    return m_revision->Path( aAncestor );
+}
 
-    m_children.insert( child );
+CHANGE_SET NODE::GetRevisionChanges() const
+{
+    return m_revision->GetRevisionChanges();
+}
 
-    child->m_depth = m_depth + 1;
-    child->m_parent = this;
-    child->m_ruleResolver = m_ruleResolver;
-    child->m_root = isRoot() ? this : m_root;
+REVISION* NODE::BranchMove()
+{
+    REVISION* result = m_revision;
+    m_revision = m_revision->Branch();
+    ++m_depth;
+    return result;
+}
 
-    // immmediate offspring of the root branch needs not copy anything.
-    // For the rest, deep-copy joints, overridden item map and pointers
-    // to stored items.
-    if( !isRoot() )
+void NODE::Squash()
+{
+    --m_depth;
+    m_revision = m_revision->Squash();
+}
+
+void NODE::SquashToRevision( REVISION* aAncestor )
+{
+    while( m_revision != aAncestor )
     {
-        JOINT_MAP::iterator j;
+        Squash();
+    }
+}
 
-        for( INDEX::ITEM_SET::iterator i = m_index->begin(); i != m_index->end(); ++i )
-            child->m_index->Add( *i );
+void NODE::SquashToParentRevision( REVISION* aAncestor )
+{
+    while( m_revision->Parent() != aAncestor )
+    {
+        Squash();
+    }
+}
 
-        child->m_joints = m_joints;
-        child->m_override = m_override;
+void NODE::Revert()
+{
+    --m_depth;
+    revertRevision( m_revision );
+    m_revision = m_revision->Revert();
+}
+
+void NODE::RevertToRevision( REVISION* aAncestor )
+{
+    while( m_revision != aAncestor )
+    {
+        Revert();
+    }
+}
+
+void NODE::RevertToParentRevision( REVISION* aAncestor )
+{
+    while( m_revision->Parent() != aAncestor )
+    {
+        Revert();
+    }
+}
+
+void NODE::CheckoutAncestor( REVISION* aAncestor )
+{
+    WalkPathUp( Path( aAncestor ) );
+}
+
+void NODE::CheckoutDescendant( REVISION* aDescendant )
+{
+    WalkPathDown( aDescendant->Path( m_revision ) );
+}
+
+void NODE::WalkPathUp( const REVISION_PATH& aPath )
+{
+    for( auto revision : aPath )
+    {
+        assert(revision == m_revision);
+        --m_depth;
+        revertRevision( revision );
+        m_revision = const_cast<REVISION*>(m_revision->Parent());
+    }
+}
+
+void NODE::WalkPathDown( const REVISION_PATH& aPath )
+{
+    for( auto it = aPath.rbegin(); it != aPath.rend(); ++it )
+    {
+        assert( (*it)->Parent() == m_revision );
+        ++m_depth;
+        applyRevision( (*it) );
+        m_revision = const_cast<REVISION*>(*it);
+    }
+}
+
+void NODE::ClearBranches()
+{
+    m_revision->ClearBranches();
+}
+
+void NODE::applyRevision( const REVISION* aRevision )
+{
+    for( auto item_ptr : aRevision->RemovedItems() )
+    {
+        removeItemIndex( item_ptr );
     }
 
-    wxLogTrace( "PNS", "%d items, %d joints, %d overrides",
-            child->m_index->Size(), (int) child->m_joints.size(), (int) child->m_override.size() );
-
-    return child;
+    for( auto& item_ptr : aRevision->AddedItems() )
+    {
+        addItemIndex( item_ptr.get() );
+    }
 }
 
-
-void NODE::unlinkParent()
+void NODE::revertRevision( const REVISION* aRevision )
 {
-    if( isRoot() )
-        return;
+    for( auto& item_ptr : aRevision->AddedItems() )
+    {
+        removeItemIndex( item_ptr.get() );
+    }
 
-    m_parent->m_children.erase( this );
+    for( auto item_ptr : aRevision->RemovedItems() )
+    {
+        addItemIndex( item_ptr );
+    }
 }
 
+void NODE::Clear()
+{
+    m_index.Clear();
+    m_joints.clear();
+    m_revision->Clear();
+}
+
+// =============
+// Index Methods
+// =============
 
 OBSTACLE_VISITOR::OBSTACLE_VISITOR( const ITEM* aItem ) :
     m_item( aItem ),
     m_node( NULL ),
-    m_override( NULL ),
     m_extraClearance( 0 )
 {
 
 }
 
 
-void OBSTACLE_VISITOR::SetWorld( const NODE* aNode, const NODE* aOverride )
+void OBSTACLE_VISITOR::SetWorld( const NODE* aNode )
 {
     m_node = aNode;
-    m_override = aOverride;
 }
 
 
 bool OBSTACLE_VISITOR::visit( ITEM* aCandidate )
 {
+/*
     // check if there is a more recent branch with a newer
     // (possibily modified) version of this item.
     if( m_override && m_override->Overrides( aCandidate ) )
         return true;
-
+*/
     return false;
 }
 
@@ -260,16 +323,8 @@ struct NODE::DEFAULT_OBSTACLE_VISITOR : public OBSTACLE_VISITOR
 
 int NODE::QueryColliding( const ITEM* aItem, OBSTACLE_VISITOR& aVisitor )
 {
-    aVisitor.SetWorld( this, NULL );
-    m_index->Query( aItem, m_maxClearance, aVisitor );
-
-    // if we haven't found enough items, look in the root branch as well.
-    if( !isRoot() )
-    {
-        aVisitor.SetWorld( m_root, this );
-        m_root->m_index->Query( aItem, m_maxClearance, aVisitor );
-    }
-
+    aVisitor.SetWorld( this );
+    m_index.Query( aItem, m_maxClearance, aVisitor );
     return 0;
 }
 
@@ -284,17 +339,9 @@ int NODE::QueryColliding( const ITEM* aItem,
 #endif
 
     visitor.SetCountLimit( aLimitCount );
-    visitor.SetWorld( this, NULL );
+    visitor.SetWorld( this );
     visitor.m_forceClearance = aForceClearance;
-    // first, look for colliding items in the local index
-    m_index->Query( aItem, m_maxClearance, visitor );
-
-    // if we haven't found enough items, look in the root branch as well.
-    if( !isRoot() && ( visitor.m_matchCount < aLimitCount || aLimitCount < 0 ) )
-    {
-        visitor.SetWorld( m_root, this );
-        m_root->m_index->Query( aItem, m_maxClearance, visitor );
-    }
+    m_index.Query( aItem, m_maxClearance, visitor );
 
     return aObstacles.size();
 }
@@ -509,23 +556,9 @@ const ITEM_SET NODE::HitTest( const VECTOR2I& aPoint ) const
     // fixme: we treat a point as an infinitely small circle - this is inefficient.
     SHAPE_CIRCLE s( aPoint, 0 );
     HIT_VISITOR visitor( items, aPoint );
-    visitor.SetWorld( this, NULL );
+    visitor.SetWorld( this );
 
-    m_index->Query( &s, m_maxClearance, visitor );
-
-    if( !isRoot() )    // fixme: could be made cleaner
-    {
-        ITEM_SET items_root;
-        visitor.SetWorld( m_root, NULL );
-        HIT_VISITOR  visitor_root( items_root, aPoint );
-        m_root->m_index->Query( &s, m_maxClearance, visitor_root );
-
-        for( ITEM* item : items_root.Items() )
-        {
-            if( !Overrides( item ) )
-                items.Add( item );
-        }
-    }
+    m_index.Query( &s, m_maxClearance, visitor );
 
     return items;
 }
@@ -534,25 +567,27 @@ const ITEM_SET NODE::HitTest( const VECTOR2I& aPoint ) const
 void NODE::addSolidIndex( SOLID* aSolid )
 {
     linkJoint( aSolid->Pos(), aSolid->Layers(), aSolid->Net(), aSolid );
-    m_index->Add( aSolid );
+    m_index.Add( aSolid );
 }
 
 void NODE::Add( std::unique_ptr< SOLID > aSolid )
 {
     aSolid->SetOwner( this );
-    addSolidIndex( aSolid.release() );
+    addSolidIndex( aSolid.get() );
+    m_revision->AddItem( std::move( aSolid ) );
 }
 
 void NODE::addViaIndex( VIA* aVia )
 {
     linkJoint( aVia->Pos(), aVia->Layers(), aVia->Net(), aVia );
-    m_index->Add( aVia );
+    m_index.Add( aVia );
 }
 
 void NODE::Add( std::unique_ptr< VIA > aVia )
 {
     aVia->SetOwner( this );
-    addViaIndex( aVia.release() );
+    addViaIndex( aVia.get() );
+    m_revision->AddItem( std::move( aVia ) );
 }
 
 void NODE::Add( LINE& aLine, bool aAllowRedundant )
@@ -589,8 +624,7 @@ void NODE::addSegmentIndex( SEGMENT* aSeg )
 {
     linkJoint( aSeg->Seg().A, aSeg->Layers(), aSeg->Net(), aSeg );
     linkJoint( aSeg->Seg().B, aSeg->Layers(), aSeg->Net(), aSeg );
-
-    m_index->Add( aSeg );
+    m_index.Add( aSeg );
 }
 
 void NODE::Add( std::unique_ptr< SEGMENT > aSegment, bool aAllowRedundant )
@@ -605,7 +639,8 @@ void NODE::Add( std::unique_ptr< SEGMENT > aSegment, bool aAllowRedundant )
         return;
 
     aSegment->SetOwner( this );
-    addSegmentIndex( aSegment.release() );
+    addSegmentIndex( aSegment.get() );
+    m_revision->AddItem( std::move( aSegment ) );
 }
 
 void NODE::Add( std::unique_ptr< ITEM > aItem, bool aAllowRedundant )
@@ -633,31 +668,36 @@ void NODE::Add( std::unique_ptr< ITEM > aItem, bool aAllowRedundant )
     }
 }
 
-
-void NODE::doRemove( ITEM* aItem )
+void NODE::addItemIndex( ITEM* aItem )
 {
-    // Can't remove items in non-leaf-revisions.
-    assert( !m_children.size() );
+    switch( aItem->Kind() )
+    {
+    case ITEM::SOLID_T:
+        addSolidIndex( static_cast<SOLID*>( aItem ) );
+        break;
 
-    // Can't remove items from child-revisions here
-    assert( aItem->Owner()->Depth() <= Depth() );
+    case ITEM::SEGMENT_T:
+        addSegmentIndex( static_cast<SEGMENT*>( aItem ) );
+        break;
 
-    if( aItem->Owner() == this ) {
-        delete aItem;
-    } else {
-        // if the item doesn't belong to this node, it must
-        // have been added in an ancestor revision.
-        m_override.insert( aItem );
+    case ITEM::LINE_T:
+        assert( false );
+        break;
+
+    case ITEM::VIA_T:
+        addViaIndex( static_cast<VIA*>( aItem ) );
+        break;
+
+    default:
+        assert( false );
     }
 }
-
 
 void NODE::removeSegmentIndex( SEGMENT* aSeg )
 {
     unlinkJoint( aSeg->Seg().A, aSeg->Layers(), aSeg->Net(), aSeg );
     unlinkJoint( aSeg->Seg().B, aSeg->Layers(), aSeg->Net(), aSeg );
-
-    m_index->Remove( aSeg );
+    m_index.Remove( aSeg );
 }
 
 void NODE::removeViaIndex( VIA* aVia )
@@ -706,13 +746,14 @@ void NODE::removeViaIndex( VIA* aVia )
             linkJoint( p, item->Layers(), net, item );
     }
 
-    m_index->Remove( aVia );
+    m_index.Remove( aVia );
 }
 
 void NODE::removeSolidIndex( SOLID* aSolid )
 {
     // fixme: this fucks up the joints, but it's only used for marking colliding obstacles for the moment, so we don't care.
-    m_index->Remove( aSolid );
+    unlinkJoint( aSolid->Pos(), aSolid->Layers(), aSolid->Net(), aSolid );
+    m_index.Remove( aSolid );
 }
 
 
@@ -731,31 +772,31 @@ void NODE::Replace( LINE& aOldLine, LINE& aNewLine )
 void NODE::Remove( SOLID* aSolid )
 {
     removeSolidIndex( aSolid );
-    doRemove( aSolid );
+    m_revision->RemoveItem( aSolid );
 }
 
 void NODE::Remove( VIA* aVia )
 {
     removeViaIndex( aVia );
-    doRemove( aVia );
+    m_revision->RemoveItem( aVia );
 }
 
 void NODE::Remove( SEGMENT* aSegment )
 {
     removeSegmentIndex( aSegment );
-    doRemove( aSegment );
+    m_revision->RemoveItem( aSegment );
 }
 
-void NODE::Remove( ITEM* aItem )
+void NODE::removeItemIndex( ITEM* aItem )
 {
     switch( aItem->Kind() )
     {
     case ITEM::SOLID_T:
-        Remove( static_cast<SOLID*>( aItem ) );
+        removeSolidIndex( static_cast<SOLID*>(aItem) );
         break;
 
     case ITEM::SEGMENT_T:
-        Remove( static_cast<SEGMENT*>( aItem ) );
+        removeSegmentIndex( static_cast<SEGMENT*>(aItem) );
         break;
 
     case ITEM::LINE_T:
@@ -763,12 +804,18 @@ void NODE::Remove( ITEM* aItem )
         break;
 
     case ITEM::VIA_T:
-        Remove( static_cast<VIA*>( aItem ) );
+        removeViaIndex( static_cast<VIA*>(aItem) );
         break;
 
     default:
         break;
     }
+}
+
+void NODE::Remove( ITEM* aItem )
+{
+    removeItemIndex( aItem );
+    m_revision->RemoveItem( aItem );
 }
 
 
@@ -970,12 +1017,6 @@ JOINT* NODE::FindJoint( const VECTOR2I& aPos, int aLayer, int aNet )
 
     JOINT_MAP::iterator f = m_joints.find( tag ), end = m_joints.end();
 
-    if( f == end && !isRoot() )
-    {
-        end = m_root->m_joints.end();
-        f = m_root->m_joints.find( tag );    // m_root->FindJoint(aPos, aLayer, aNet);
-    }
-
     if( f == end )
         return NULL;
 
@@ -1000,24 +1041,8 @@ void NODE::LockJoint( const VECTOR2I& aPos, const ITEM* aItem, bool aLock )
 
 JOINT& NODE::touchJoint( const VECTOR2I& aPos, const LAYER_RANGE& aLayers, int aNet )
 {
-    JOINT::HASH_TAG tag;
-
-    tag.pos = aPos;
-    tag.net = aNet;
-
-    // try to find the joint in this node.
-    JOINT_MAP::iterator f = m_joints.find( tag );
-
-    std::pair<JOINT_MAP::iterator, JOINT_MAP::iterator> range;
-
-    // not found and we are not root? find in the root and copy results here.
-    if( f == m_joints.end() && !isRoot() )
-    {
-        range = m_root->m_joints.equal_range( tag );
-
-        for( f = range.first; f != range.second; ++f )
-            m_joints.insert( *f );
-    }
+    JOINT::HASH_TAG tag{ aPos, aNet };
+    using JOINT_ITERATOR = JOINT_MAP::iterator;
 
     // now insert and combine overlapping joints
     JOINT jt( aPos, aLayers, aNet );
@@ -1026,13 +1051,14 @@ JOINT& NODE::touchJoint( const VECTOR2I& aPos, const LAYER_RANGE& aLayers, int a
 
     do
     {
+        std::pair<JOINT_ITERATOR, JOINT_ITERATOR> range;
         merged  = false;
         range   = m_joints.equal_range( tag );
 
         if( range.first == m_joints.end() )
             break;
 
-        for( f = range.first; f != range.second; ++f )
+        for( JOINT_ITERATOR f = range.first; f != range.second; ++f )
         {
             if( aLayers.Overlaps( f->second.Layers() ) )
             {
@@ -1155,99 +1181,34 @@ void NODE::Dump( bool aLong )
 #endif
 }
 
-
-void NODE::GetUpdatedItems( ITEM_VECTOR& aRemoved, ITEM_VECTOR& aAdded )
-{
-    aRemoved.reserve( m_override.size() );
-    aAdded.reserve( m_index->Size() );
-
-    if( isRoot() )
-        return;
-
-    for( ITEM* item : m_override )
-        aRemoved.push_back( item );
-
-    for( INDEX::ITEM_SET::iterator i = m_index->begin(); i != m_index->end(); ++i )
-        aAdded.push_back( *i );
-}
-
-void NODE::releaseChildren()
-{
-    // copy the kids as the NODE destructor erases the item from the parent node.
-    std::set<NODE*> kids = m_children;
-
-    for( NODE* node : kids )
-    {
-        node->releaseChildren();
-        delete node;
-    }
-}
-
-void NODE::Commit( NODE* aNode )
-{
-    if( aNode->isRoot() )
-        return;
-
-    for( ITEM* item : aNode->m_override )
-    Remove( item );
-
-    for( INDEX::ITEM_SET::iterator i = aNode->m_index->begin();
-         i != aNode->m_index->end(); ++i )
-    {
-        (*i)->SetRank( -1 );
-        (*i)->Unmark();
-        Add( std::unique_ptr<ITEM>( *i ) );
-    }
-
-    releaseChildren();
-}
-
-
-void NODE::KillChildren()
-{
-    assert( isRoot() );
-    releaseChildren();
-}
-
-
 void NODE::AllItemsInNet( int aNet, std::set<ITEM*>& aItems )
 {
-    INDEX::NET_ITEMS_LIST* l_cur = m_index->GetItemsForNet( aNet );
+    INDEX::NET_ITEMS_LIST* l_cur = m_index.GetItemsForNet( aNet );
 
     if( l_cur )
     {
         for( ITEM*item : *l_cur )
             aItems.insert( item );
     }
-
-    if( !isRoot() )
-    {
-        INDEX::NET_ITEMS_LIST* l_root = m_root->m_index->GetItemsForNet( aNet );
-
-        if( l_root )
-            for( INDEX::NET_ITEMS_LIST::iterator i = l_root->begin(); i!= l_root->end(); ++i )
-                if( !Overrides( *i ) )
-                    aItems.insert( *i );
-    }
 }
 
 
 void NODE::ClearRanks( int aMarkerMask )
 {
-    for( INDEX::ITEM_SET::iterator i = m_index->begin(); i != m_index->end(); ++i )
+    for( auto& itemptr : m_index )
     {
-        (*i)->SetRank( -1 );
-        (*i)->Mark( (*i)->Marker() & (~aMarkerMask) );
+        itemptr->SetRank( -1 );
+        itemptr->Mark( itemptr->Marker() & (~aMarkerMask) );
     }
 }
 
 
 int NODE::FindByMarker( int aMarker, ITEM_SET& aItems )
 {
-    for( INDEX::ITEM_SET::iterator i = m_index->begin(); i != m_index->end(); ++i )
+    for( auto& itemptr : m_index )
     {
-        if( (*i)->Marker() & aMarker )
-            aItems.Add( *i );
+        if( itemptr->Marker() & aMarker )
+            aItems.Add( itemptr );
     }
 
     return 0;
@@ -1256,19 +1217,19 @@ int NODE::FindByMarker( int aMarker, ITEM_SET& aItems )
 
 int NODE::RemoveByMarker( int aMarker )
 {
-    std::list<ITEM*> garbage;
+    std::vector<ITEM*> garbage;
 
-    for( INDEX::ITEM_SET::iterator i = m_index->begin(); i != m_index->end(); ++i )
+    for( auto& itemptr : m_index )
     {
-        if( (*i)->Marker() & aMarker )
+        if( itemptr->Marker() & aMarker )
         {
-            garbage.push_back( *i );
+            garbage.push_back( itemptr );
         }
     }
 
-    for( std::list<ITEM*>::const_iterator i = garbage.begin(), end = garbage.end(); i != end; ++i )
+    for( auto garbage_item : garbage )
     {
-        Remove( *i );
+        Remove( garbage_item );
     }
 
     return 0;
@@ -1308,9 +1269,9 @@ SEGMENT* NODE::findRedundantSegment( SEGMENT* aSeg )
 
 ITEM *NODE::FindItemByParent( const BOARD_CONNECTED_ITEM* aParent )
 {
-    INDEX::NET_ITEMS_LIST* l_cur = m_index->GetItemsForNet( aParent->GetNetCode() );
+    INDEX::NET_ITEMS_LIST* l_cur = m_index.GetItemsForNet( aParent->GetNetCode() );
 
-    for( ITEM*item : *l_cur )
+    for( ITEM* item : *l_cur )
         if( item->Parent() == aParent )
             return item;
 

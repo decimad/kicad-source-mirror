@@ -28,6 +28,7 @@ set( PCBNEW_PNS_SRCS
     pns_meander_placer_base.cpp
     pns_meander_skew_placer.cpp
     pns_revision.cpp
+	pns_index.cpp
     pns_node.cpp
     pns_optimizer.cpp
     pns_router.cpp

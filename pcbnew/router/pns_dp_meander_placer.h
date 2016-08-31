@@ -60,6 +60,9 @@ public:
      */
     bool Start( const VECTOR2I& aP, ITEM* aStartItem );
 
+    /// @copydoc PLACEMENT_ALGO::Cancel()
+    void Cancel() override;
+
     /**
      * Function Move()
      *
@@ -70,7 +73,7 @@ public:
     bool Move( const VECTOR2I& aP, ITEM* aEndItem );
 
     /**
-     * Function FixRoute()
+     * Function CommitRoute()
      *
      * Commits the currently routed track to the parent node, taking
      * aP as the final end point and aEndItem as the final anchor (if provided).
@@ -78,7 +81,7 @@ public:
      * result is violating design rules - in such case, the track is only committed
      * if Settings.CanViolateDRC() is on.
      */
-    bool FixRoute( const VECTOR2I& aP, ITEM* aEndItem );
+    bool CommitRoute( const VECTOR2I& aP, ITEM* aEndItem );
 
     const LINE Trace() const;
 
@@ -121,14 +124,13 @@ private:
 
     int origPathLength() const;
 
-    ///> pointer to world to search colliding items
-    NODE* m_world;
-
     ///> current routing start point (end of tail, beginning of head)
     VECTOR2I m_currentStart;
 
     ///> Current world state
-    NODE* m_currentNode;
+    NODE* m_node;
+
+    SCOPED_BRANCH m_processed;
 
     DIFF_PAIR m_originPair;
     DIFF_PAIR::COUPLED_SEGMENTS_VEC m_coupledSegments;

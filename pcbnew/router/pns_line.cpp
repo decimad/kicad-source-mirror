@@ -123,13 +123,13 @@ void LINE::copyLinks( const LINE* aParent )
 
 SEGMENT* SEGMENT::Clone() const
 {
-    SEGMENT* s = new SEGMENT;
+    SEGMENT* s  = new SEGMENT;
 
-    s->m_seg = m_seg;
-    s->m_net = m_net;
+    s->m_seg    = m_seg;
+    s->m_net    = m_net;
     s->m_layers = m_layers;
     s->m_marker = m_marker;
-    s->m_rank = m_rank;
+    s->m_rank   = m_rank;
 
     return s;
 }

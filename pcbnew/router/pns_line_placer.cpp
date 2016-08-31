@@ -40,13 +40,11 @@ LINE_PLACER::LINE_PLACER( ROUTER* aRouter ) :
     PLACEMENT_ALGO( aRouter )
 {
     m_initial_direction = DIRECTION_45::N;
-    m_world = NULL;
+    m_node = nullptr;
     m_shove = NULL;
-    m_currentNode = NULL;
     m_idle = true;
 
     // Init temporary variables (do not leave uninitialized members)
-    m_lastNode = NULL;
     m_placingVia = false;
     m_currentNet = 0;
     m_currentLayer = 0;
@@ -64,7 +62,7 @@ LINE_PLACER::~LINE_PLACER()
 
 void LINE_PLACER::setWorld( NODE* aWorld )
 {
-    m_world = aWorld;
+    m_node = aWorld;
 }
 
 
@@ -247,7 +245,7 @@ bool LINE_PLACER::reduceTail( const VECTOR2I& aEnd )
 
         LINE tmp( m_tail, replacement );
 
-        if( m_currentNode->CheckColliding( &tmp, ITEM::ANY_T ) )
+        if( m_node->CheckColliding( &tmp, ITEM::ANY_T ) )
             break;
 
         if( DIRECTION_45( replacement.CSegment( 0 ) ) == dir )
@@ -363,7 +361,7 @@ bool LINE_PLACER::rhWalkOnly( const VECTOR2I& aP, LINE& aNewHead )
 
     viaOk = buildInitialLine( aP, initTrack );
 
-    WALKAROUND walkaround( m_currentNode, Router() );
+    WALKAROUND walkaround( m_node, Router() );
 
     walkaround.SetSolidsOnly( false );
     walkaround.SetIterationLimit( Settings().WalkaroundIterationLimit() );
@@ -387,7 +385,7 @@ bool LINE_PLACER::rhWalkOnly( const VECTOR2I& aP, LINE& aNewHead )
 
     if( wf == WALKAROUND::STUCK )
     {
-        walkFull = walkFull.ClipToNearestObstacle( m_currentNode );
+        walkFull = walkFull.ClipToNearestObstacle( m_node );
         rv = true;
     }
     else if( m_placingVia && viaOk )
@@ -395,9 +393,9 @@ bool LINE_PLACER::rhWalkOnly( const VECTOR2I& aP, LINE& aNewHead )
         walkFull.AppendVia( makeVia( walkFull.CPoint( -1 ) ) );
     }
 
-    OPTIMIZER::Optimize( &walkFull, effort, m_currentNode );
+    OPTIMIZER::Optimize( &walkFull, effort, m_node );
 
-    if( m_currentNode->CheckColliding( &walkFull ) )
+    if( m_node->CheckColliding( &walkFull ) )
     {
         aNewHead = m_head;
         return false;
@@ -414,7 +412,7 @@ bool LINE_PLACER::rhMarkObstacles( const VECTOR2I& aP, LINE& aNewHead )
 {
     buildInitialLine( aP, m_head );
     aNewHead = m_head;
-    return static_cast<bool>( m_currentNode->CheckColliding( &m_head ) );
+    return static_cast<bool>(m_node->CheckColliding( &m_head ) );
 }
 
 
@@ -425,10 +423,10 @@ bool LINE_PLACER::rhShoveOnly( const VECTOR2I& aP, LINE& aNewHead )
 
     bool viaOk = buildInitialLine( aP, initTrack );
 
-    m_currentNode = m_shove->CurrentNode();
-    OPTIMIZER optimizer( m_currentNode );
+    m_node = m_shove->CurrentNode();
+    OPTIMIZER optimizer( m_node );
 
-    WALKAROUND walkaround( m_currentNode, Router() );
+    WALKAROUND walkaround( m_node, Router() );
 
     walkaround.SetSolidsOnly( true );
     walkaround.SetIterationLimit( 10 );
@@ -474,8 +472,6 @@ bool LINE_PLACER::rhShoveOnly( const VECTOR2I& aP, LINE& aNewHead )
 
     SHOVE::SHOVE_STATUS status = m_shove->ShoveLines( l );
 
-    m_currentNode = m_shove->CurrentNode();
-
     if( status == SHOVE::SH_OK  || status == SHOVE::SH_HEAD_MODIFIED )
     {
         if( status == SHOVE::SH_HEAD_MODIFIED )
@@ -483,7 +479,7 @@ bool LINE_PLACER::rhShoveOnly( const VECTOR2I& aP, LINE& aNewHead )
             l2 = m_shove->NewHead();
         }
 
-        optimizer.SetWorld( m_currentNode );
+        optimizer.SetWorld( m_node );
         optimizer.SetEffortLevel( OPTIMIZER::MERGE_OBTUSE | OPTIMIZER::SMART_PADS );
         optimizer.SetCollisionMask( ITEM::ANY_T );
         optimizer.Optimize( &l2 );
@@ -494,7 +490,7 @@ bool LINE_PLACER::rhShoveOnly( const VECTOR2I& aP, LINE& aNewHead )
     }
     else
     {
-        walkaround.SetWorld( m_currentNode );
+        walkaround.SetWorld( m_node );
         walkaround.SetSolidsOnly( false );
         walkaround.SetIterationLimit( 10 );
         walkaround.SetApproachCursor( true, aP );
@@ -530,7 +526,7 @@ bool LINE_PLACER::optimizeTailHeadTransition()
 {
     LINE tmp = Trace();
 
-    if( OPTIMIZER::Optimize( &tmp, OPTIMIZER::FANOUT_CLEANUP, m_currentNode ) )
+    if( OPTIMIZER::Optimize( &tmp, OPTIMIZER::FANOUT_CLEANUP, m_node ) )
     {
         if( tmp.SegmentCount() < 1 )
             return false;
@@ -569,7 +565,7 @@ bool LINE_PLACER::optimizeTailHeadTransition()
     // If so, replace the (threshold) last tail points and the head with
     // the optimized line
 
-    if( OPTIMIZER::Optimize( &new_head, OPTIMIZER::MERGE_OBTUSE, m_currentNode ) )
+    if( OPTIMIZER::Optimize( &new_head, OPTIMIZER::MERGE_OBTUSE, m_node ) )
     {
         LINE tmp( m_tail, opt_line );
 
@@ -676,10 +672,7 @@ void LINE_PLACER::FlipPosture()
 
 NODE* LINE_PLACER::CurrentNode( bool aLoopsRemoved ) const
 {
-    if( aLoopsRemoved && m_lastNode )
-        return m_lastNode;
-
-    return m_currentNode;
+    return m_node;
 }
 
 
@@ -760,6 +753,11 @@ bool LINE_PLACER::Start( const VECTOR2I& aP, ITEM* aStartItem )
     return true;
 }
 
+void LINE_PLACER::Cancel()
+{
+    m_processedBranch.Release();
+    m_workingBranch.Release();
+}
 
 void LINE_PLACER::initPlacement()
 {
@@ -779,27 +777,23 @@ void LINE_PLACER::initPlacement()
     m_p_start = m_currentStart;
     m_direction = m_initial_direction;
 
-    NODE* world = Router()->GetWorld();
+    //Router()->ResetWorld();
 
-    world->KillChildren();
-    NODE* rootNode = world->Branch();
+    setWorld( Router()->GetWorld() );
+    m_workingBranch.Reset( m_node );
 
-    splitAdjacentSegments( rootNode, m_startItem, m_currentStart );
-
-    setWorld( rootNode );
+    splitAdjacentSegments( m_node, m_startItem, m_currentStart );
 
     wxLogTrace( "PNS", "world %p, intitial-direction %s layer %d",
-            m_world, m_direction.Format().c_str(), m_currentLayer );
+        m_node, m_direction.Format().c_str(), m_currentLayer );
 
-    m_lastNode = NULL;
-    m_currentNode = m_world;
     m_currentMode = Settings().Mode();
 
     m_shove.reset();
 
     if( m_currentMode == RM_Shove || m_currentMode == RM_Smart )
     {
-        m_shove.reset( new SHOVE( m_world->Branch(), Router() ) );
+        m_shove.reset( new SHOVE( m_node, Router() ) );
     }
 }
 
@@ -810,14 +804,12 @@ bool LINE_PLACER::Move( const VECTOR2I& aP, ITEM* aEndItem )
     VECTOR2I p = aP;
     int eiDepth = -1;
 
+/*
     if( aEndItem && aEndItem->Owner() )
         eiDepth = static_cast<NODE*>( aEndItem->Owner() )->Depth();
+*/
 
-    if( m_lastNode )
-    {
-        delete m_lastNode;
-        m_lastNode = NULL;
-    }
+    m_processedBranch.Commit();
 
     route( p );
 
@@ -828,15 +820,14 @@ bool LINE_PLACER::Move( const VECTOR2I& aP, ITEM* aEndItem )
     else
         m_currentEnd = current.CLine().CPoint( -1 );
 
-    NODE* latestNode = m_currentNode;
-    m_lastNode = latestNode->Branch();
+    m_processedBranch.Reset( m_node );
 
-    if( eiDepth >= 0 && aEndItem && latestNode->Depth() > eiDepth && current.SegmentCount() )
+    if( /* eiDepth >= 0 &&*/ aEndItem && /* m_node->Depth() > eiDepth  && */ current.SegmentCount() )
     {
-        splitAdjacentSegments( m_lastNode, aEndItem, current.CPoint( -1 ) );
+        splitAdjacentSegments( m_node, aEndItem, current.CPoint( -1 ) );
 
         if( Settings().RemoveLoops() )
-            removeLoops( m_lastNode, current );
+            removeLoops( m_node, current );
     }
 
     updateLeadingRatLine();
@@ -844,7 +835,7 @@ bool LINE_PLACER::Move( const VECTOR2I& aP, ITEM* aEndItem )
 }
 
 
-bool LINE_PLACER::FixRoute( const VECTOR2I& aP, ITEM* aEndItem )
+bool LINE_PLACER::CommitRoute( const VECTOR2I& aP, ITEM* aEndItem )
 {
     bool realEnd = false;
     int lastV;
@@ -853,7 +844,7 @@ bool LINE_PLACER::FixRoute( const VECTOR2I& aP, ITEM* aEndItem )
 
     if( m_currentMode == RM_MarkObstacles &&
         !Settings().CanViolateDRC() &&
-        m_world->CheckColliding( &pl ) )
+        m_node->CheckColliding( &pl ) )
             return false;
 
     const SHAPE_LINE_CHAIN& l = pl.CLine();
@@ -862,11 +853,10 @@ bool LINE_PLACER::FixRoute( const VECTOR2I& aP, ITEM* aEndItem )
     {
         if( pl.EndsWithVia() )
         {
-            m_lastNode->Add( Clone( pl.Via() ) );
-            Router()->CommitRouting( m_lastNode );
-
-            m_lastNode = NULL;
-            m_currentNode = NULL;
+            m_node->Add( Clone( pl.Via() ) );
+            m_processedBranch.Commit();
+            m_workingBranch.Release();
+            Router()->CommitRouting();
 
             m_idle = true;
         }
@@ -898,19 +888,18 @@ bool LINE_PLACER::FixRoute( const VECTOR2I& aP, ITEM* aEndItem )
         seg->SetWidth( pl.Width() );
         seg->SetLayer( m_currentLayer );
         lastSeg = seg.get();
-        m_lastNode->Add( std::move( seg ) );
+        m_node->Add( std::move( seg ) );
     }
 
     if( pl.EndsWithVia() )
-        m_lastNode->Add( Clone( pl.Via() ) );
+        m_node->Add( Clone( pl.Via() ) );
 
     if( realEnd )
-        simplifyNewLine( m_lastNode, lastSeg );
+        simplifyNewLine( m_node, lastSeg );
 
-    Router()->CommitRouting( m_lastNode );
-
-    m_lastNode = NULL;
-    m_currentNode = NULL;
+    m_processedBranch.Commit();
+    m_workingBranch.Release();
+    Router()->CommitRouting();
 
     if( !realEnd )
     {
@@ -1014,7 +1003,7 @@ void LINE_PLACER::updateLeadingRatLine()
 {
     LINE current = Trace();
     SHAPE_LINE_CHAIN ratLine;
-    TOPOLOGY topo( m_lastNode );
+    TOPOLOGY topo( m_node );
 
     if( topo.LeadingRatLine( &current, ratLine ) )
         Dbg()->AddLine( ratLine, 5, 10000 );
@@ -1074,7 +1063,7 @@ bool LINE_PLACER::buildInitialLine( const VECTOR2I& aP, LINE& aHead )
 
     bool solidsOnly = ( m_currentMode != RM_Walkaround );
 
-    if( v.PushoutForce( m_currentNode, lead, force, solidsOnly, 40 ) )
+    if( v.PushoutForce( m_node, lead, force, solidsOnly, 40 ) )
     {
         SHAPE_LINE_CHAIN line = m_direction.BuildInitialTrace( m_p_start, aP + force );
         aHead = LINE( aHead, line );

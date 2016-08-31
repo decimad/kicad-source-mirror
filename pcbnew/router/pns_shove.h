@@ -96,7 +96,7 @@ private:
         int64_t m_length;
         int m_segments;
         VECTOR2I m_p;
-        NODE* m_node;
+        REVISION* m_revision;
         ITEM_SET m_headItems;
         COST_ESTIMATOR m_cost;
         OPT_BOX2I m_affectedArea;
@@ -106,7 +106,7 @@ private:
                                  LINE& aShoved, const HULL_SET& hulls );
 
     bool reduceSpringback( const ITEM_SET& aHeadItems );
-    bool pushSpringback( NODE* aNode, const ITEM_SET& aHeadItems,
+    bool pushSpringback( REVISION* aRevision, const ITEM_SET& aHeadItems,
                                 const COST_ESTIMATOR& aCost, const OPT_BOX2I& aAffectedArea );
 
     SHOVE_STATUS walkaroundLoneVia( LINE& aCurrent, LINE& aObstacle, LINE& aShoved );
@@ -145,8 +145,7 @@ private:
     std::vector<LINE>           m_lineStack;
     std::vector<LINE>           m_optimizerQueue;
 
-    NODE*                       m_root;
-    NODE*                       m_currentNode;
+    NODE*                       m_node;
 
     OPT_LINE                    m_newHead;
 

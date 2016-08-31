@@ -59,6 +59,13 @@ public:
     virtual bool Start( const VECTOR2I& aP, ITEM* aStartItem ) = 0;
 
     /**
+     * Function Cancel()
+     *
+     * Cancels the active placement
+     */
+    virtual void Cancel() = 0;
+
+    /**
      * Function Move()
      *
      * Moves the end of the currently routed primtive(s) to the point aP, taking
@@ -68,7 +75,7 @@ public:
     virtual bool Move( const VECTOR2I& aP, ITEM* aEndItem ) = 0;
 
     /**
-     * Function FixRoute()
+     * Function CommitRoute()
      *
      * Commits the currently routed items to the parent node, taking
      * aP as the final end point and aEndItem as the final anchor (if provided).
@@ -76,7 +83,7 @@ public:
      * result is violating design rules - in such case, the track is only committed
      * if Settings.CanViolateDRC() is on.
      */
-    virtual bool FixRoute( const VECTOR2I& aP, ITEM* aEndItem ) = 0;
+    virtual bool CommitRoute( const VECTOR2I& aP, ITEM* aEndItem ) = 0;
 
     /**
      * Function ToggleVia()

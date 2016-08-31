@@ -789,7 +789,7 @@ void PNS_KICAD_IFACE::DisplayItem( const PNS::ITEM* aItem, int aColor, int aClea
 }
 
 
-void PNS_KICAD_IFACE::HideItem( PNS::ITEM* aItem )
+void PNS_KICAD_IFACE::HideItem( const PNS::ITEM* aItem )
 {
     BOARD_CONNECTED_ITEM* parent = aItem->Parent();
 
@@ -804,7 +804,7 @@ void PNS_KICAD_IFACE::HideItem( PNS::ITEM* aItem )
 }
 
 
-void PNS_KICAD_IFACE::RemoveItem( PNS::ITEM* aItem )
+void PNS_KICAD_IFACE::RemoveItem( const PNS::ITEM* aItem )
 {
     BOARD_CONNECTED_ITEM* parent = aItem->Parent();
 
@@ -824,7 +824,7 @@ void PNS_KICAD_IFACE::AddItem( PNS::ITEM* aItem )
     {
     case PNS::ITEM::SEGMENT_T:
     {
-        PNS::SEGMENT* seg = static_cast<PNS::SEGMENT*>( aItem );
+        const PNS::SEGMENT* seg = static_cast<const PNS::SEGMENT*>( aItem );
         TRACK* track = new TRACK( m_board );
         const SEG& s = seg->Seg();
         track->SetStart( wxPoint( s.A.x, s.A.y ) );
@@ -839,7 +839,7 @@ void PNS_KICAD_IFACE::AddItem( PNS::ITEM* aItem )
     case PNS::ITEM::VIA_T:
     {
         VIA* via_board = new VIA( m_board );
-        PNS::VIA* via = static_cast<PNS::VIA*>( aItem );
+        const PNS::VIA* via = static_cast<const PNS::VIA*>( aItem );
         via_board->SetPosition( wxPoint( via->Pos().x, via->Pos().y ) );
         via_board->SetWidth( via->Diameter() );
         via_board->SetDrill( via->Drill() );

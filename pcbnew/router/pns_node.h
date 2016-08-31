@@ -36,6 +36,8 @@
 #include "pns_item.h"
 #include "pns_joint.h"
 #include "pns_itemset.h"
+#include "pns_revision.h"
+#include "pns_index.h"
 
 namespace PNS {
 
@@ -43,7 +45,6 @@ class SEGMENT;
 class LINE;
 class SOLID;
 class VIA;
-class INDEX;
 class ROUTER;
 class NODE;
 
@@ -100,7 +101,7 @@ public:
 
     OBSTACLE_VISITOR( const ITEM* aItem );
 
-    void SetWorld( const NODE* aNode, const NODE* aOverride = NULL );
+    void SetWorld( const NODE* aNode );
 
     virtual bool operator()( ITEM* aCandidate ) = 0;
 
@@ -111,11 +112,8 @@ protected:
     ///> the item we are looking for collisions with
     const ITEM* m_item;
 
-    ///> node we are searching in (either root or a branch)
+    ///> node we are searching in
     const NODE* m_node;
-
-    ///> node that overrides root entries
-    const NODE* m_override;
 
     ///> additional clearance
     int m_extraClearance;
@@ -140,9 +138,62 @@ public:
     typedef std::vector<ITEM*>          ITEM_VECTOR;
     typedef std::vector<OBSTACLE>       OBSTACLES;
 
-    NODE();
+    NODE( REVISION* aRevision );
     ~NODE();
 
+    void Clear();
+
+    /// Revision Methods
+public:
+    /**
+    * Function Branch()
+    *
+    * Creates a lightweight copy (called branch) of self that tracks
+    * the changes (added/removed items) wrs to the root. Note that if there are
+    * any branches in use, their parents must NOT be deleted.
+    * @return pointer to the old revision
+    */
+    REVISION* BranchMove();
+
+    void Revert();
+    void RevertToParentRevision( REVISION* aAncestor );
+    void RevertToRevision( REVISION* aAncestor );
+
+    void Squash();
+    void SquashToParentRevision( REVISION* aAncestor );
+    void SquashToRevision( REVISION* aAncestor );
+
+    REVISION_PATH Path( REVISION* aAncestor ) const;
+
+    CHANGE_SET GetRevisionChanges() const;
+
+    void CheckoutAncestor  ( REVISION* aAncestor );
+    void CheckoutDescendant( REVISION* aDescendant );
+
+    void WalkPathUp  ( const REVISION_PATH& aPath );
+    void WalkPathDown( const REVISION_PATH& aPath );
+
+    REVISION* GetRevision();
+
+    ///> Clears all branches.
+    void ClearBranches();
+
+    /**
+    * Function GetUpdatedItems()
+    *
+    * Returns the lists of items removed and added in this branch, with
+    * respect to the root branch.
+    * @param aRemoved removed items
+    * @param aAdded added items
+    */
+    CHANGE_SET GetUpdatedItems();
+
+private:
+    void applyRevision ( const REVISION* aRevision );
+    void revertRevision( const REVISION* aRevision );
+
+    /// Index Methods
+public:
     ///> Returns the expected clearance between items a and b.
     int GetClearance( const ITEM* aA, const ITEM* aB ) const;
 
@@ -314,16 +365,6 @@ public:
     void Replace( LINE& aOldLine, LINE& aNewLine );
 
     /**
-     * Function Branch()
-     *
-     * Creates a lightweight copy (called branch) of self that tracks
-     * the changes (added/removed items) wrs to the root. Note that if there are
-     * any branches in use, their parents must NOT be deleted.
-     * @return the new branch
-     */
-    NODE* Branch();
-
-    /**
      * Function AssembleLine()
      *
      * Follows the joint map to assemble a line connecting two non-trivial
@@ -337,16 +378,6 @@ public:
 
     ///> Prints the contents and joints structure
     void Dump( bool aLong = false );
-
-    /**
-     * Function GetUpdatedItems()
-     *
-     * Returns the lists of items removed and added in this branch, with
-     * respect to the root branch.
-     * @param aRemoved removed items
-     * @param aAdded added items
-     */
-    void GetUpdatedItems( ITEM_VECTOR& aRemoved, ITEM_VECTOR& aAdded );
 
     /**
      * Function Commit()
@@ -394,9 +425,6 @@ public:
     ///> finds the joints corresponding to the ends of line aLine
     void FindLineEnds( const LINE& aLine, JOINT& aA, JOINT& aB );
 
-    ///> Destroys all child nodes. Applicable only to the root node.
-    void KillChildren();
-
     void AllItemsInNet( int aNet, std::set<ITEM*>& aItems );
 
     void ClearRanks( int aMarkerMask = MK_HEAD | MK_VIOLATION );
@@ -406,26 +434,14 @@ public:
 
     ITEM* FindItemByParent( const BOARD_CONNECTED_ITEM* aParent );
 
-    bool HasChildren() const
-    {
-        return !m_children.empty();
-    }
-
-    ///> checks if this branch contains an updated version of the m_item
-    ///> from the root branch.
-    bool Overrides( ITEM* aItem ) const
-    {
-        return m_override.find( aItem ) != m_override.end();
-    }
-
 private:
     struct DEFAULT_OBSTACLE_VISITOR;
     typedef boost::unordered_multimap<JOINT::HASH_TAG, JOINT> JOINT_MAP;
     typedef JOINT_MAP::value_type TagJointPair;
 
     /// nodes are not copyable
-    NODE( const NODE& aB );
-    NODE& operator=( const NODE& aB );
+    NODE( const NODE& aB ) = delete;
+    NODE& operator=( const NODE& aB ) = delete;
 
     ///> tries to find matching joint and creates a new one if not found
     JOINT& touchJoint( const VECTOR2I&     aPos,
@@ -444,20 +460,18 @@ private:
     void addSolidIndex( SOLID* aSeg );
     void addSegmentIndex( SEGMENT* aSeg );
     void addViaIndex( VIA* aVia );
+    void addItemIndex( ITEM* aItem);
 
 
     void removeLine( LINE& aLine );
     void removeSolidIndex( SOLID* aSeg );
     void removeSegmentIndex( SEGMENT* aSeg );
     void removeViaIndex( VIA* aVia );
-
-    void doRemove( ITEM* aItem );
-    void unlinkParent();
-    void releaseChildren();
+    void removeItemIndex( ITEM* aItem );
 
     bool isRoot() const
     {
-        return m_parent == NULL;
+        return !m_revision->Parent();
     }
 
     SEGMENT* findRedundantSegment( const VECTOR2I& A, const VECTOR2I& B,
@@ -478,18 +492,6 @@ private:
     ///> their position, layer set and net.
     JOINT_MAP m_joints;
 
-    ///> node this node was branched from
-    NODE* m_parent;
-
-    ///> root node of the whole hierarchy
-    NODE* m_root;
-
-    ///> list of nodes branched from this one
-    std::set<NODE*> m_children;
-
-    ///> hash of root's items that have been changed in this node
-    boost::unordered_set<ITEM*> m_override;
-
     ///> worst case item-item clearance
     int m_maxClearance;
 
@@ -497,11 +499,88 @@ private:
     RULE_RESOLVER* m_ruleResolver;
 
     ///> Geometric/Net index of the items
-    INDEX* m_index;
+    INDEX m_index;
+
+    ///> Current revision
+    REVISION* m_revision;
 
     ///> depth of the node (number of parent nodes in the inheritance chain)
     int m_depth;
 };
+
+class SCOPED_BRANCH
+{
+public:
+    SCOPED_BRANCH()
+        : m_node( nullptr )
+    {}
+
+    SCOPED_BRANCH( NODE* aNode )
+        : m_node( aNode )
+    {
+        m_old_revision = m_node->BranchMove();
+    }
+
+    explicit operator bool() const
+    {
+        return m_node != nullptr;
+    }
+
+    NODE* operator->()
+    {
+        return m_node;
+    }
+
+    NODE* get()
+    {
+        return m_node;
+    }
+
+    void Release()
+    {
+        m_node = nullptr;
+    }
+
+    REVISION* OriginalRevision()
+    {
+        return m_old_revision;
+    }
+
+    void Commit()
+    {
+        if( m_node ) {
+            m_node->SquashToRevision( m_old_revision );
+            m_node = nullptr;
+        }
+    }
+
+    void Reset()
+    {
+        if( m_node ) {
+            m_node->RevertToRevision( m_old_revision );
+            m_node = nullptr;
+        }
+    }
+
+    void Reset( NODE* node )
+    {
+        Reset();
+        if( node ) {
+            m_node = node;
+            m_old_revision = m_node->BranchMove();
+        }
+    }
+
+    ~SCOPED_BRANCH()
+    {
+        Reset();
+    }
+
+private:
+    NODE* m_node;
+    REVISION* m_old_revision;
+};
+
 
 }
 

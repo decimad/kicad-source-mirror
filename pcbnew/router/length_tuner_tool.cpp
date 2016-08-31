@@ -196,12 +196,12 @@ void LENGTH_TUNER_TOOL::performTuning()
         }
         else if( evt->IsClick( BUT_LEFT ) )
         {
-            if( m_router->FixRoute( evt->Position(), NULL ) )
+            if( m_router->CommitRoute( evt->Position(), NULL ) )
                 break;
         }
         else if( evt->IsAction( &ACT_EndTuning ) )
         {
-            if( m_router->FixRoute( end, NULL ) )
+            if( m_router->CommitRoute( end, NULL ) )
                 break;
         }
         else if( evt->IsAction( &ACT_AmplDecrease ) )

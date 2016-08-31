@@ -29,6 +29,7 @@
 
 #include <list>
 #include <geometry/shape_index.h>
+#include <boost/unordered_set.hpp>
 
 #include "pns_item.h"
 
@@ -87,7 +88,7 @@ public:
      * @return number of items found.
      */
     template<class Visitor>
-    int Query( const ITEM* aItem, int aMinDistance, Visitor& aVisitor );
+    int Query( const ITEM* aItem, int aMinDistance, Visitor& aVisitor ) const;
 
     /**
      * Function Query()
@@ -103,7 +104,7 @@ public:
      * @return number of items found.
      */
     template<class Visitor>
-    int Query( const SHAPE* aShape, int aMinDistance, Visitor& aVisitor );
+    int Query( const SHAPE* aShape, int aMinDistance, Visitor& aVisitor ) const;
 
     /**
      * Function Clear()
@@ -149,7 +150,7 @@ private:
     static const int    SI_PadsBottom   = 1;
 
     template <class Visitor>
-    int querySingle( int index, const SHAPE* aShape, int aMinDistance, Visitor& aVisitor );
+    int querySingle( int index, const SHAPE* aShape, int aMinDistance, Visitor& aVisitor ) const;
 
     ITEM_SHAPE_INDEX* getSubindex( const ITEM* aItem );
 
@@ -158,86 +159,8 @@ private:
     ITEM_SET m_allItems;
 };
 
-INDEX::INDEX()
-{
-    memset( m_subIndices, 0, sizeof( m_subIndices ) );
-}
-
-INDEX::ITEM_SHAPE_INDEX* INDEX::getSubindex( const ITEM* aItem )
-{
-    int idx_n = -1;
-
-    const LAYER_RANGE l = aItem->Layers();
-
-    switch( aItem->Kind() )
-    {
-    case ITEM::VIA_T:
-        idx_n = SI_Multilayer;
-        break;
-
-    case ITEM::SOLID_T:
-        {
-            if( l.IsMultilayer() )
-                idx_n = SI_Multilayer;
-            else if( l.Start() == B_Cu ) // fixme: use kicad layer codes
-                idx_n = SI_PadsTop;
-            else if( l.Start() == F_Cu )
-                idx_n = SI_PadsBottom;
-        }
-        break;
-
-    case ITEM::SEGMENT_T:
-    case ITEM::LINE_T:
-        idx_n = SI_Traces + 2 * l.Start() + SI_SegStraight;
-        break;
-
-    default:
-        break;
-    }
-
-    assert( idx_n >= 0 && idx_n < MaxSubIndices );
-
-    if( !m_subIndices[idx_n] )
-        m_subIndices[idx_n] = new ITEM_SHAPE_INDEX;
-
-    return m_subIndices[idx_n];
-}
-
-void INDEX::Add( ITEM* aItem )
-{
-    ITEM_SHAPE_INDEX* idx = getSubindex( aItem );
-
-    idx->Add( aItem );
-    m_allItems.insert( aItem );
-    int net = aItem->Net();
-
-    if( net >= 0 )
-    {
-        m_netMap[net].push_back( aItem );
-    }
-}
-
-void INDEX::Remove( ITEM* aItem )
-{
-    ITEM_SHAPE_INDEX* idx = getSubindex( aItem );
-
-    idx->Remove( aItem );
-    m_allItems.erase( aItem );
-
-    int net = aItem->Net();
-
-    if( net >= 0 && m_netMap.find( net ) != m_netMap.end() )
-        m_netMap[net].remove( aItem );
-}
-
-void INDEX::Replace( ITEM* aOldItem, ITEM* aNewItem )
-{
-    Remove( aOldItem );
-    Add( aNewItem );
-}
-
 template<class Visitor>
-int INDEX::querySingle( int index, const SHAPE* aShape, int aMinDistance, Visitor& aVisitor )
+int INDEX::querySingle( int index, const SHAPE* aShape, int aMinDistance, Visitor& aVisitor ) const
 {
     if( !m_subIndices[index] )
         return 0;
@@ -246,7 +169,7 @@ int INDEX::querySingle( int index, const SHAPE* aShape, int aMinDistance, Visito
 }
 
 template<class Visitor>
-int INDEX::Query( const ITEM* aItem, int aMinDistance, Visitor& aVisitor )
+int INDEX::Query( const ITEM* aItem, int aMinDistance, Visitor& aVisitor ) const
 {
     const SHAPE* shape = aItem->Shape();
     int total = 0;
@@ -279,7 +202,7 @@ int INDEX::Query( const ITEM* aItem, int aMinDistance, Visitor& aVisitor )
 }
 
 template<class Visitor>
-int INDEX::Query( const SHAPE* aShape, int aMinDistance, Visitor& aVisitor )
+int INDEX::Query( const SHAPE* aShape, int aMinDistance, Visitor& aVisitor ) const
 {
     int total = 0;
 
@@ -287,32 +210,6 @@ int INDEX::Query( const SHAPE* aShape, int aMinDistance, Visitor& aVisitor )
         total += querySingle( i, aShape, aMinDistance, aVisitor );
 
     return total;
-}
-
-void INDEX::Clear()
-{
-    for( int i = 0; i < MaxSubIndices; ++i )
-    {
-        ITEM_SHAPE_INDEX* idx = m_subIndices[i];
-
-        if( idx )
-            delete idx;
-
-        m_subIndices[i] = NULL;
-    }
-}
-
-INDEX::~INDEX()
-{
-    Clear();
-}
-
-INDEX::NET_ITEMS_LIST* INDEX::GetItemsForNet( int aNet )
-{
-    if( m_netMap.find( aNet ) == m_netMap.end() )
-        return NULL;
-
-    return &m_netMap[aNet];
 }
 
 }

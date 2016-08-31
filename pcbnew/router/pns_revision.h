@@ -38,6 +38,9 @@ namespace PNS {
     class ITEM;
     class REVISION;
 
+    /// Note: Paths are directed towards roots
+    using REVISION_PATH = std::vector< const REVISION* >;
+
     ///
     /// Class SEQUENCE
     /// Wraps up a [start, end) iterator sequence.
@@ -78,7 +81,7 @@ namespace PNS {
 
     class CHANGE_SET {
     private:
-        using ITEMS_CONTAINER   = std::vector< const ITEM* >;
+        using ITEMS_CONTAINER   = std::vector< ITEM* >;
 
     public:
         using ITEM_ITERATOR       = ITEMS_CONTAINER::iterator;
@@ -89,10 +92,10 @@ namespace PNS {
         void Apply ( const REVISION* aState );
         void Revert( const REVISION* aState );
 
-        void Add   ( const ITEM* aItem );
-        void Remove( const ITEM* aItem );
+        void Add   ( ITEM* aItem );
+        void Remove( ITEM* aItem );
 
-        static CHANGE_SET FromPath( std::vector< const REVISION* > aPath );
+        static CHANGE_SET FromPath( const REVISION_PATH& aPath );
 
         SEQUENCE< ITEM_ITERATOR >       AddedItems();
         SEQUENCE< CONST_ITEM_ITERATOR > AddedItems() const;
@@ -153,6 +156,10 @@ namespace PNS {
          * @return true iff the item is shadowed
          */
         bool IsShadowed( const ITEM* aItem );
+
+        CHANGE_SET GetRevisionChanges() const;
+        REVISION* Revert();
+        void Clear();
 
         /**
         * Function Squash
@@ -218,7 +225,7 @@ namespace PNS {
          * @note Undefined behaviour if aAncestor is not an ancestor of this revision
          * @pre Parent()[->Parent()*] == aAncestor
          */
-        std::vector< const REVISION* > Path( const REVISION* aAncestor ) const;
+        REVISION_PATH Path( const REVISION* aAncestor ) const;
 
 
         //
@@ -241,6 +248,8 @@ namespace PNS {
         std::vector< std::unique_ptr< ITEM > > m_added_items;
         std::vector< ITEM* >                   m_removed_items;
     };
+
+
 
 }
 

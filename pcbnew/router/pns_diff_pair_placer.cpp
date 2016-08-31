@@ -46,9 +46,7 @@ DIFF_PAIR_PLACER::DIFF_PAIR_PLACER( ROUTER* aRouter ) :
     m_netP = 0;
     m_netN = 0;
     m_iteration = 0;
-    m_shove = NULL;
-    m_currentNode = NULL;
-    m_lastNode = NULL;
+    m_node  = nullptr;
     m_placingVia = false;
     m_viaDiameter = 0;
     m_viaDrill = 0;
@@ -70,7 +68,7 @@ DIFF_PAIR_PLACER::~DIFF_PAIR_PLACER()
 
 void DIFF_PAIR_PLACER::setWorld( NODE* aWorld )
 {
-    m_world = aWorld;
+    m_node = aWorld;
 }
 
 const VIA DIFF_PAIR_PLACER::makeVia( const VECTOR2I& aP, int aNet )
@@ -109,8 +107,8 @@ bool DIFF_PAIR_PLACER::rhMarkObstacles( const VECTOR2I& aP )
     if( !routeHead( aP ) )
         return false;
 
-    bool collP = static_cast<bool>( m_currentNode->CheckColliding( &m_currentTrace.PLine() ) );
-    bool collN = static_cast<bool>( m_currentNode->CheckColliding( &m_currentTrace.NLine() ) );
+    bool collP = static_cast<bool>( m_node->CheckColliding( &m_currentTrace.PLine() ) );
+    bool collN = static_cast<bool>( m_node->CheckColliding( &m_currentTrace.NLine() ) );
 
     m_fitOk = !( collP || collN ) ;
 
@@ -145,7 +143,7 @@ bool DIFF_PAIR_PLACER::propagateDpHeadForces ( const VECTOR2I& aP, VECTOR2I& aNe
     }
 
     // fixme: I'm too lazy to do it well. Circular approximaton will do for the moment.
-    if( virtHead.PushoutForce( m_currentNode, lead, force, solidsOnly, 40 ) )
+    if( virtHead.PushoutForce( m_node, lead, force, solidsOnly, 40 ) )
     {
         aNewP = aP + force;
         return true;
@@ -244,12 +242,12 @@ bool DIFF_PAIR_PLACER::tryWalkDp( NODE* aNode, DIFF_PAIR &aPair, bool aSolidsOnl
     for( int attempt = 0; attempt <= 3; attempt++ )
     {
         DIFF_PAIR p;
-        NODE *tmp = m_currentNode->Branch();
+        SCOPED_BRANCH temp_branch( m_node );
 
         bool pfirst = ( attempt & 1 ) ? true : false;
         bool wind_cw = ( attempt & 2 ) ? true : false;
 
-        if( attemptWalk( tmp, &aPair, p, pfirst, wind_cw, aSolidsOnly ) )
+        if( attemptWalk( temp_branch.get(), &aPair, p, pfirst, wind_cw, aSolidsOnly ) )
         {
         //    double len = p.TotalLength();
             double cl = p.CoupledLength();
@@ -263,13 +261,11 @@ bool DIFF_PAIR_PLACER::tryWalkDp( NODE* aNode, DIFF_PAIR &aPair, bool aSolidsOnl
                 best = p;
             }
         }
-
-        delete tmp;
     }
 
     if( bestScore > 0.0 )
     {
-        OPTIMIZER optimizer( m_currentNode );
+        OPTIMIZER optimizer( m_node );
 
         aPair.SetShape( best );
         optimizer.Optimize( &aPair );
@@ -286,7 +282,7 @@ bool DIFF_PAIR_PLACER::rhWalkOnly( const VECTOR2I& aP )
     if( !routeHead ( aP ) )
         return false;
 
-    m_fitOk = tryWalkDp( m_currentNode, m_currentTrace, false );
+    m_fitOk = tryWalkDp( m_node, m_currentTrace, false );
 
     return m_fitOk;
 }
@@ -312,8 +308,6 @@ bool DIFF_PAIR_PLACER::route( const VECTOR2I& aP )
 
 bool DIFF_PAIR_PLACER::rhShoveOnly( const VECTOR2I& aP )
 {
-    m_currentNode = m_shove->CurrentNode();
-
     bool ok = routeHead( aP );
 
     m_fitOk  = false;
@@ -321,7 +315,7 @@ bool DIFF_PAIR_PLACER::rhShoveOnly( const VECTOR2I& aP )
     if( !ok )
         return false;
 
-    if( !tryWalkDp( m_currentNode, m_currentTrace, true ) )
+    if( !tryWalkDp( m_node, m_currentTrace, true ) )
         return false;
 
     LINE pLine( m_currentTrace.PLine() );
@@ -333,14 +327,10 @@ bool DIFF_PAIR_PLACER::rhShoveOnly( const VECTOR2I& aP )
 
     SHOVE::SHOVE_STATUS status = m_shove->ShoveMultiLines( head );
 
-    m_currentNode = m_shove->CurrentNode();
-
     if( status == SHOVE::SH_OK )
     {
-        m_currentNode = m_shove->CurrentNode();
-
-        if( !m_currentNode->CheckColliding( &m_currentTrace.PLine() ) &&
-            !m_currentNode->CheckColliding( &m_currentTrace.NLine() ) )
+        if( !m_node->CheckColliding( &m_currentTrace.PLine() ) &&
+            !m_node->CheckColliding( &m_currentTrace.NLine() ) )
         {
             m_fitOk = true;
         }
@@ -372,12 +362,9 @@ void DIFF_PAIR_PLACER::FlipPosture()
 
 NODE* DIFF_PAIR_PLACER::CurrentNode( bool aLoopsRemoved ) const
 {
-    if( m_lastNode )
-        return m_lastNode;
-
-    return m_currentNode;
+    // fixme, use m_hasPostprocessed
+    return m_node;
 }
-
 
 bool DIFF_PAIR_PLACER::SetLayer( int aLayer )
 {
@@ -472,9 +459,9 @@ bool DIFF_PAIR_PLACER::findDpPrimitivePair( const VECTOR2I& aP, ITEM* aItem, DP_
 {
     int netP, netN;
 
-    wxLogTrace( "PNS", "world %p", m_world );
+    wxLogTrace( "PNS", "world %p", m_node );
 
-    bool result = m_world->GetRuleResolver()->DpNetPair( aItem, netP, netN );
+    bool result = m_node->GetRuleResolver()->DpNetPair( aItem, netP, netN );
 
     if( !result )
         return false;
@@ -484,7 +471,7 @@ bool DIFF_PAIR_PLACER::findDpPrimitivePair( const VECTOR2I& aP, ITEM* aItem, DP_
 
     wxLogTrace( "PNS", "result %d", !!result );
 
-    OPT_VECTOR2I refAnchor = getDanglingAnchor( m_currentNode, aItem );
+    OPT_VECTOR2I refAnchor = getDanglingAnchor( m_node, aItem );
     ITEM* primRef = aItem;
 
     wxLogTrace( "PNS", "refAnchor %p", aItem );
@@ -494,7 +481,7 @@ bool DIFF_PAIR_PLACER::findDpPrimitivePair( const VECTOR2I& aP, ITEM* aItem, DP_
 
     std::set<ITEM*> coupledItems;
 
-    m_currentNode->AllItemsInNet( coupledNet, coupledItems );
+    m_node->AllItemsInNet( coupledNet, coupledItems );
     double bestDist = std::numeric_limits<double>::max();
     bool found = false;
 
@@ -502,7 +489,7 @@ bool DIFF_PAIR_PLACER::findDpPrimitivePair( const VECTOR2I& aP, ITEM* aItem, DP_
     {
         if( item->Kind() == aItem->Kind() )
         {
-            OPT_VECTOR2I anchor = getDanglingAnchor( m_currentNode, item );
+            OPT_VECTOR2I anchor = getDanglingAnchor( m_node, item );
             if( !anchor )
                 continue;
 
@@ -562,7 +549,6 @@ bool DIFF_PAIR_PLACER::Start( const VECTOR2I& aP, ITEM* aStartItem )
     }
 
     setWorld( Router()->GetWorld() );
-    m_currentNode = m_world;
 
     if( !findDpPrimitivePair( aP, aStartItem, m_start ) )
     {
@@ -607,6 +593,11 @@ bool DIFF_PAIR_PLACER::Start( const VECTOR2I& aP, ITEM* aStartItem )
     return true;
 }
 
+void DIFF_PAIR_PLACER::Cancel()
+{
+
+}
+
 
 void DIFF_PAIR_PLACER::initPlacement()
 {
@@ -615,15 +606,10 @@ void DIFF_PAIR_PLACER::initPlacement()
     m_currentEndItem = NULL;
     m_startDiagonal = m_initialDiagonal;
 
-    NODE* world = Router()->GetWorld();
+    setWorld( Router()->GetWorld() );
+    m_node->ClearBranches();
+    m_node->BranchMove();
 
-    world->KillChildren();
-    NODE* rootNode = world->Branch();
-
-    setWorld( rootNode );
-
-    m_lastNode = NULL;
-    m_currentNode = rootNode;
     m_currentMode = Settings().Mode();
 
     m_shove.reset();
@@ -712,18 +698,14 @@ bool DIFF_PAIR_PLACER::Move( const VECTOR2I& aP , ITEM* aEndItem )
     m_currentEndItem = aEndItem;
     m_fitOk = false;
 
-    delete m_lastNode;
-    m_lastNode = NULL;
+    m_postProcessed.Reset();
 
     if( !route( aP ) )
         return false;
 
-    NODE* latestNode = m_currentNode;
-    m_lastNode = latestNode->Branch();
+    m_postProcessed.Reset( m_node );
 
-    assert( m_lastNode != NULL );
     m_currentEnd = aP;
-
     updateLeadingRatLine();
 
     return true;
@@ -742,7 +724,7 @@ void DIFF_PAIR_PLACER::UpdateSizes( const SIZES_SETTINGS& aSizes )
 }
 
 
-bool DIFF_PAIR_PLACER::FixRoute( const VECTOR2I& aP, ITEM* aEndItem )
+bool DIFF_PAIR_PLACER::CommitRoute( const VECTOR2I& aP, ITEM* aEndItem )
 {
     if( !m_fitOk )
         return false;
@@ -754,7 +736,7 @@ bool DIFF_PAIR_PLACER::FixRoute( const VECTOR2I& aP, ITEM* aEndItem )
     if( m_currentTrace.CP().SegmentCount() > 1 )
         m_initialDiagonal = !DIRECTION_45( m_currentTrace.CP().CSegment( -2 ) ).IsDiagonal();
 
-    TOPOLOGY topo( m_lastNode );
+    TOPOLOGY topo( m_node );
 
     if( !m_snapOnTarget && !m_currentTrace.EndsWithVias() )
     {
@@ -772,8 +754,8 @@ bool DIFF_PAIR_PLACER::FixRoute( const VECTOR2I& aP, ITEM* aEndItem )
 
     if( m_currentTrace.EndsWithVias() )
     {
-        m_lastNode->Add( Clone( m_currentTrace.PLine().Via() ) );
-        m_lastNode->Add( Clone( m_currentTrace.NLine().Via() ) );
+        m_node->Add( Clone( m_currentTrace.PLine().Via() ) );
+        m_node->Add( Clone( m_currentTrace.NLine().Via() ) );
         m_chainedPlacement = false;
     }
     else
@@ -784,17 +766,17 @@ bool DIFF_PAIR_PLACER::FixRoute( const VECTOR2I& aP, ITEM* aEndItem )
     LINE lineP( m_currentTrace.PLine() );
     LINE lineN( m_currentTrace.NLine() );
 
-    m_lastNode->Add( lineP );
-    m_lastNode->Add( lineN );
+    m_node->Add( lineP );
+    m_node->Add( lineN );
 
     topo.SimplifyLine( &lineP );
     topo.SimplifyLine( &lineN );
 
     m_prevPair = m_currentTrace.EndingPrimitives();
 
-    Router()->CommitRouting( m_lastNode );
+    m_postProcessed.Commit();
+    Router()->CommitRouting();
 
-    m_lastNode = NULL;
     m_placingVia = false;
 
     if( m_snapOnTarget )
@@ -820,7 +802,7 @@ void DIFF_PAIR_PLACER::GetModifiedNets( std::vector<int> &aNets ) const
 void DIFF_PAIR_PLACER::updateLeadingRatLine()
 {
     SHAPE_LINE_CHAIN ratLineN, ratLineP;
-    TOPOLOGY topo( m_lastNode );
+    TOPOLOGY topo( m_node );
 
     if( topo.LeadingRatLine( &m_currentTrace.PLine(), ratLineP ) )
     {
