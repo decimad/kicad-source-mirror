@@ -258,7 +258,7 @@ namespace PNS {
         ReleaseBranch( aBranch );
     }
 
-    const REVISION* REVISION::Parent() const
+    REVISION* REVISION::Parent() const
     {
         return m_parent;
     }

@@ -155,7 +155,7 @@ void NODE::WalkPathUp( const REVISION_PATH& aPath )
         assert(revision == m_revision);
         --m_depth;
         revertRevision( revision );
-        m_revision = const_cast<REVISION*>(m_revision->Parent());
+        m_revision = m_revision->Parent();
     }
 }
 
@@ -166,6 +166,10 @@ void NODE::WalkPathDown( const REVISION_PATH& aPath )
         assert( (*it)->Parent() == m_revision );
         ++m_depth;
         applyRevision( (*it) );
+        // The paths are intended to hold const, we could translate the
+        // the pointer to non-const by searching the revision's branches,
+        // but given the calling code is wellformed (the above assertion
+        // holds), it would result in the same result as a const_cast.
         m_revision = const_cast<REVISION*>(*it);
     }
 }

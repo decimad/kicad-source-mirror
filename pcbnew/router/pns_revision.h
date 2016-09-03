@@ -209,7 +209,7 @@ namespace PNS {
          * Returns the parent of this branch or nullptr if this revision is a root
          * @return Const pointer to parent revision or nullptr if root
          */
-        const REVISION* Parent() const;
+        REVISION* Parent() const;
 
         /**
          * Function NumChanges
