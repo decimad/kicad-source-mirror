@@ -123,7 +123,7 @@ public:
         m_amplitude = 0;
         m_side = false;
         m_baseIndex = 0;
-        m_currentTarget = NULL;
+        m_currentTarget = nullptr;
         m_meanCornerRadius = 0;
     }
 
@@ -398,11 +398,14 @@ public:
     MEANDERED_LINE()
     {
         // Do not leave unitialized members, and keep static analyser quiet:
-        m_placer = NULL;
+        m_placer = nullptr;
         m_dual = false;
         m_width = 0;
         m_baselineOffset = 0;
     }
+
+    MEANDERED_LINE(MEANDERED_LINE&&) = default;
+    MEANDERED_LINE& operator=(MEANDERED_LINE&&) = default;
 
     /**
      * Constructor
@@ -440,7 +443,7 @@ public:
      * Adds a new meander shape the the meandered line.
      * @param aShape the meander shape to add
      */
-    void AddMeander( MEANDER_SHAPE* aShape );
+    void AddMeander( const MEANDER_SHAPE& aShape );
 
     /**
      * Function Clear()
@@ -480,7 +483,7 @@ public:
      *
      * @return set of meander shapes for this line
      */
-    std::vector<MEANDER_SHAPE*>& Meanders()
+    std::vector< std::unique_ptr< MEANDER_SHAPE > >& Meanders()
     {
         return m_meanders;
     }
@@ -507,7 +510,7 @@ private:
     VECTOR2I m_last;
 
     MEANDER_PLACER_BASE* m_placer;
-    std::vector<MEANDER_SHAPE*> m_meanders;
+    std::vector< std::unique_ptr< MEANDER_SHAPE > > m_meanders;
 
     bool m_dual;
     int m_width;

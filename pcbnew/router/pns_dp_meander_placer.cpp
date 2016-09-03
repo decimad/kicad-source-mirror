@@ -265,7 +265,7 @@ bool DP_MEANDER_PLACER::Move( const VECTOR2I& aP, ITEM* aEndItem )
         tunedP.Clear();
         tunedN.Clear();
 
-        for( MEANDER_SHAPE* m : m_result.Meanders() )
+        for( const std::unique_ptr< MEANDER_SHAPE >& m : m_result.Meanders() )
         {
             if( m->Type() != MT_EMPTY )
             {

@@ -111,7 +111,7 @@ void MEANDER_PLACER_BASE::tuneLineLength( MEANDERED_LINE& aTuned, int aElongatio
     int remaining = aElongation;
     bool finished = false;
 
-    for( MEANDER_SHAPE* m : aTuned.Meanders() )
+    for( std::unique_ptr< MEANDER_SHAPE >& m : aTuned.Meanders() )
     {
         if( m->Type() != MT_CORNER )
         {
@@ -143,7 +143,7 @@ void MEANDER_PLACER_BASE::tuneLineLength( MEANDERED_LINE& aTuned, int aElongatio
     remaining = aElongation;
     int meanderCount = 0;
 
-    for(MEANDER_SHAPE* m : aTuned.Meanders())
+    for( std::unique_ptr< MEANDER_SHAPE >& m : aTuned.Meanders())
     {
         if( m->Type() != MT_CORNER && m->Type() != MT_EMPTY )
         {
@@ -162,7 +162,7 @@ void MEANDER_PLACER_BASE::tuneLineLength( MEANDERED_LINE& aTuned, int aElongatio
 
     if( balance >= 0 )
     {
-        for( MEANDER_SHAPE* m : aTuned.Meanders() )
+        for( std::unique_ptr< MEANDER_SHAPE >& m : aTuned.Meanders() )
         {
             if( m->Type() != MT_CORNER && m->Type() != MT_EMPTY )
             {

@@ -84,7 +84,7 @@ void MEANDERED_LINE::MeanderSegment( const SEG& aBase, int aBaseIndex )
                     if( m.Fit( MT_CHECK_START, aBase, m_last, i ) )
                     {
                         turning = true;
-                        AddMeander( new MEANDER_SHAPE( m ) );
+                        AddMeander( m );
                         side = !i;
                         started = true;
                         break;
@@ -99,7 +99,7 @@ void MEANDERED_LINE::MeanderSegment( const SEG& aBase, int aBaseIndex )
                     {
                         if( m.Fit( MT_SINGLE, aBase, m_last, i ) )
                         {
-                            AddMeander( new MEANDER_SHAPE( m ) );
+                            AddMeander( m );
                             fail = false;
                             started = false;
                             side = !i;
@@ -113,12 +113,12 @@ void MEANDERED_LINE::MeanderSegment( const SEG& aBase, int aBaseIndex )
                 if( rv )
                 {
                     m.Fit( MT_TURN, aBase, m_last, side );
-                    AddMeander( new MEANDER_SHAPE( m ) );
+                    AddMeander( m );
                     started = true;
                 } else {
                     m.Fit( MT_FINISH, aBase, m_last, side );
                     started = false;
-                    AddMeander( new MEANDER_SHAPE( m ) );
+                    AddMeander( m );
                     turning = false;
                 }
 
@@ -128,7 +128,7 @@ void MEANDERED_LINE::MeanderSegment( const SEG& aBase, int aBaseIndex )
         {
             bool rv = m.Fit( MT_FINISH, aBase, m_last, side );
             if( rv )
-                AddMeander( new MEANDER_SHAPE( m ) );
+                AddMeander( m );
 
             break;
 
@@ -421,7 +421,7 @@ bool MEANDERED_LINE::CheckSelfIntersections( MEANDER_SHAPE* aShape, int aClearan
 {
     for( int i = m_meanders.size() - 1; i >= 0; i-- )
     {
-        MEANDER_SHAPE* m = m_meanders[i];
+        MEANDER_SHAPE* m = m_meanders[i].get();
 
         if( m->Type() == MT_EMPTY || m->Type() == MT_CORNER )
             continue;
@@ -572,12 +572,12 @@ void MEANDER_SHAPE::MakeEmpty()
 
 void MEANDERED_LINE::AddCorner( const VECTOR2I& aA, const VECTOR2I& aB )
 {
-    MEANDER_SHAPE* m = new MEANDER_SHAPE( m_placer, m_width, m_dual );
+    std::unique_ptr< MEANDER_SHAPE > m( new MEANDER_SHAPE( m_placer, m_width, m_dual ) );
 
     m->MakeCorner( aA, aB );
     m_last = aA;
 
-    m_meanders.push_back( m );
+    m_meanders.push_back( std::move( m ) );
 }
 
 
@@ -593,20 +593,16 @@ void MEANDER_SHAPE::MakeCorner( VECTOR2I aP1, VECTOR2I aP2 )
 }
 
 
-void MEANDERED_LINE::AddMeander( MEANDER_SHAPE* aShape )
+void MEANDERED_LINE::AddMeander( const MEANDER_SHAPE& aShape )
 {
-    m_last = aShape->BaseSegment().B;
-    m_meanders.push_back( aShape );
+    std::unique_ptr< MEANDER_SHAPE > newMeander( new MEANDER_SHAPE( aShape ) );
+    m_last = newMeander->BaseSegment().B;
+    m_meanders.push_back( std::move( newMeander ) );
 }
 
 
 void MEANDERED_LINE::Clear()
 {
-    for( MEANDER_SHAPE* m : m_meanders )
-    {
-        delete m;
-    }
-
     m_meanders.clear( );
 }
 

@@ -158,7 +158,7 @@ bool MEANDER_PLACER::doMove( const VECTOR2I& aP, ITEM* aEndItem, int aTargetLeng
     {
         tuned.Clear();
 
-        for( MEANDER_SHAPE* m : m_result.Meanders() )
+        for( const std::unique_ptr< MEANDER_SHAPE >& m : m_result.Meanders() )
         {
             if( m->Type() != MT_EMPTY )
             {
