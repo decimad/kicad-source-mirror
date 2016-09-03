@@ -51,6 +51,18 @@ VIEW_GROUP::~VIEW_GROUP()
 {
 }
 
+void VIEW_GROUP::ResetView( VIEW* aView )
+{
+    if( m_view ) {
+        m_view->Remove( this );
+    }
+
+    m_view = aView;
+
+    if( m_view) {
+        m_view->Add( this );
+    }
+}
 
 void VIEW_GROUP::Add( VIEW_ITEM* aItem )
 {

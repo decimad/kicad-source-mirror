@@ -49,6 +49,12 @@ public:
     typedef std::set<VIEW_ITEM*>::iterator iter;
 
     /**
+     * Function ResetView
+     *
+     */
+    void ResetView( VIEW* aView = nullptr );
+
+    /**
      * Function Add()
      * Adds an item to the group.
      *
