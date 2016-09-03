@@ -116,7 +116,7 @@ private:
     LINE     m_draggedLine;
     VIA*     m_draggedVia;
     LINE     m_lastValidDraggedLine;
-    SHOVE*   m_shove;
+    std::unique_ptr< SHOVE > m_shove;
     int      m_draggedSegmentIndex;
     bool     m_dragStatus;
     PNS_MODE m_currentMode;

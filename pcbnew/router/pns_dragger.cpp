@@ -42,8 +42,6 @@ DRAGGER::DRAGGER( ROUTER* aRouter ) :
 
 DRAGGER::~DRAGGER()
 {
-    if( m_shove )
-        delete m_shove;
 }
 
 
@@ -108,7 +106,7 @@ bool DRAGGER::startDragVia( const VECTOR2D& aP, VIA* aVia )
 
 bool DRAGGER::Start( const VECTOR2I& aP, ITEM* aStartItem )
 {
-    m_shove = new SHOVE( m_world, Router() );
+    m_shove.reset( new SHOVE( m_world, Router() ) );
     m_lastNode = NULL;
     m_draggedItems.Clear();
     m_currentMode = Settings().Mode();
