@@ -46,7 +46,6 @@ DIFF_PAIR_PLACER::DIFF_PAIR_PLACER( ROUTER* aRouter ) :
     m_netP = 0;
     m_netN = 0;
     m_iteration = 0;
-    m_world = NULL;
     m_shove = NULL;
     m_currentNode = NULL;
     m_lastNode = NULL;
@@ -66,8 +65,6 @@ DIFF_PAIR_PLACER::DIFF_PAIR_PLACER( ROUTER* aRouter ) :
 
 DIFF_PAIR_PLACER::~DIFF_PAIR_PLACER()
 {
-    if( m_shove )
-        delete m_shove;
 }
 
 
@@ -629,14 +626,11 @@ void DIFF_PAIR_PLACER::initPlacement()
     m_currentNode = rootNode;
     m_currentMode = Settings().Mode();
 
-    if( m_shove )
-        delete m_shove;
-
-    m_shove = NULL;
+    m_shove.reset();
 
     if( m_currentMode == RM_Shove || m_currentMode == RM_Smart )
     {
-        m_shove = new SHOVE( m_currentNode, Router() );
+        m_shove.reset( new SHOVE( m_currentNode, Router() ) );
     }
 }
 
