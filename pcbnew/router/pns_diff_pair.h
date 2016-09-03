@@ -136,8 +136,8 @@ private:
 class DP_PRIMITIVE_PAIR
 {
 public:
-    DP_PRIMITIVE_PAIR():
-        m_primP( NULL ), m_primN( NULL ) {};
+    DP_PRIMITIVE_PAIR()
+    {};
 
     DP_PRIMITIVE_PAIR( const DP_PRIMITIVE_PAIR& aOther );
     DP_PRIMITIVE_PAIR( ITEM* aPrimP, ITEM* aPrimN );
@@ -152,8 +152,8 @@ public:
 
     DP_PRIMITIVE_PAIR& operator=( const DP_PRIMITIVE_PAIR& aOther );
 
-    ITEM* PrimP() const { return m_primP; }
-    ITEM* PrimN() const { return m_primN; }
+    ITEM* PrimP() const { return m_primP.get(); }
+    ITEM* PrimN() const { return m_primN.get(); }
 
     bool Directional() const;
 
@@ -165,15 +165,15 @@ public:
 
     void dump()
     {
-        printf( "-- Prim-P %p anchor [%d, %d]\n", m_primP, m_anchorP.x, m_anchorP.y );
-        printf( "-- Prim-N %p anchor [%d, %d]\n", m_primN, m_anchorN.x, m_anchorN.y );
+        printf( "-- Prim-P %p anchor [%d, %d]\n", m_primP.get(), m_anchorP.x, m_anchorP.y );
+        printf( "-- Prim-N %p anchor [%d, %d]\n", m_primN.get(), m_anchorN.x, m_anchorN.y );
     }
 
 private:
     DIRECTION_45 anchorDirection( ITEM* aItem, const VECTOR2I& aP ) const;
 
-    ITEM* m_primP;
-    ITEM* m_primN;
+    std::unique_ptr< ITEM > m_primP;
+    std::unique_ptr< ITEM > m_primN;
     VECTOR2I m_anchorP, m_anchorN;
 };
 

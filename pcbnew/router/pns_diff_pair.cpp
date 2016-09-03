@@ -41,11 +41,10 @@ namespace PNS {
 
 class LINE;
 
-DP_PRIMITIVE_PAIR::DP_PRIMITIVE_PAIR( ITEM* aPrimP, ITEM* aPrimN )
+DP_PRIMITIVE_PAIR::DP_PRIMITIVE_PAIR( ITEM* aPrimP, ITEM* aPrimN ) :
+      m_primP( Clone( *aPrimP ) )
+    , m_primN( Clone( *aPrimN ) )
 {
-    m_primP = aPrimP->Clone();
-    m_primN = aPrimN->Clone();
-
     m_anchorP = m_primP->Anchor( 0 );
     m_anchorN = m_primN->Anchor( 0 );
 }
@@ -62,19 +61,16 @@ DP_PRIMITIVE_PAIR::DP_PRIMITIVE_PAIR( const VECTOR2I& aAnchorP, const VECTOR2I& 
 {
     m_anchorP = aAnchorP;
     m_anchorN = aAnchorN;
-    m_primP = m_primN = NULL;
 }
 
 
 DP_PRIMITIVE_PAIR::DP_PRIMITIVE_PAIR( const DP_PRIMITIVE_PAIR& aOther )
 {
-    m_primP = m_primN = NULL;
-
     if( aOther.m_primP )
-        m_primP = aOther.m_primP->Clone();
+        m_primP = Clone( *aOther.m_primP );
 
     if( aOther.m_primN )
-        m_primN = aOther.m_primN->Clone();
+        m_primN = Clone( *aOther.m_primN );
 
     m_anchorP = aOther.m_anchorP;
     m_anchorN = aOther.m_anchorN;
@@ -84,9 +80,9 @@ DP_PRIMITIVE_PAIR::DP_PRIMITIVE_PAIR( const DP_PRIMITIVE_PAIR& aOther )
 DP_PRIMITIVE_PAIR& DP_PRIMITIVE_PAIR::operator=( const DP_PRIMITIVE_PAIR& aOther )
 {
     if( aOther.m_primP )
-        m_primP = aOther.m_primP->Clone();
+        m_primP = Clone( *aOther.m_primP );
     if( aOther.m_primN )
-        m_primN = aOther.m_primN->Clone();
+        m_primN = Clone( *aOther.m_primN );
 
     m_anchorP = aOther.m_anchorP;
     m_anchorN = aOther.m_anchorN;
@@ -97,17 +93,12 @@ DP_PRIMITIVE_PAIR& DP_PRIMITIVE_PAIR::operator=( const DP_PRIMITIVE_PAIR& aOther
 
 DP_PRIMITIVE_PAIR::~DP_PRIMITIVE_PAIR()
 {
-    delete m_primP;
-    delete m_primN;
 }
 
 
 bool DP_PRIMITIVE_PAIR::Directional() const
 {
-    if( !m_primP )
-        return false;
-
-    return m_primP->OfKind( ITEM::SEGMENT_T );
+    return m_primP && m_primP->OfKind( ITEM::SEGMENT_T );
 }
 
 
@@ -135,7 +126,7 @@ void DP_PRIMITIVE_PAIR::CursorOrientation( const VECTOR2I& aCursorPos, VECTOR2I&
         aP = m_primP->Anchor( 1 );
         aN = m_primN->Anchor( 1 );
         midpoint = ( aP + aN ) / 2;
-        SEG s = static_cast <SEGMENT*>( m_primP )->Seg();
+        SEG s = static_cast <SEGMENT*>( m_primP.get() )->Seg();
 
         if ( s.B != s.A )
         {
@@ -167,13 +158,13 @@ void DP_PRIMITIVE_PAIR::CursorOrientation( const VECTOR2I& aCursorPos, VECTOR2I&
 
 DIRECTION_45 DP_PRIMITIVE_PAIR::DirP() const
 {
-    return anchorDirection( m_primP, m_anchorP );
+    return anchorDirection( m_primP.get(), m_anchorP );
 }
 
 
 DIRECTION_45 DP_PRIMITIVE_PAIR::DirN() const
 {
-    return anchorDirection( m_primN, m_anchorN );
+    return anchorDirection( m_primN.get(), m_anchorN );
 }
 
 
