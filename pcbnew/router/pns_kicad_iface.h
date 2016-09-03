@@ -23,6 +23,7 @@
 #define __PNS_KICAD_IFACE_H
 
 #include <unordered_set>
+#include <view/view_group.h>
 
 #include "pns_router.h"
 
@@ -60,15 +61,15 @@ public:
     PNS::DEBUG_DECORATOR* GetDebugDecorator();
 
 private:
-    PNS_PCBNEW_RULE_RESOLVER* m_ruleResolver;
-    PNS_PCBNEW_DEBUG_DECORATOR* m_debugDecorator;
+    std::unique_ptr< PNS_PCBNEW_RULE_RESOLVER >   m_ruleResolver;
+    std::unique_ptr< PNS_PCBNEW_DEBUG_DECORATOR > m_debugDecorator;
 
     std::unique_ptr< PNS::SOLID >   syncPad( D_PAD* aPad );
     std::unique_ptr< PNS::SEGMENT > syncTrack( TRACK* aTrack );
     std::unique_ptr< PNS::VIA >     syncVia( VIA* aVia );
 
     KIGFX::VIEW* m_view;
-    KIGFX::VIEW_GROUP* m_previewItems;
+    KIGFX::VIEW_GROUP m_previewItems;
     std::unordered_set<BOARD_CONNECTED_ITEM*> m_hiddenItems;
 
     PNS::NODE* m_world;

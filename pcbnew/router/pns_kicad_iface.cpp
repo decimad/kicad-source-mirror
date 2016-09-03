@@ -288,8 +288,10 @@ bool PNS_PCBNEW_RULE_RESOLVER::DpNetPair( PNS::ITEM* aItem, int& aNetP, int& aNe
 class PNS_PCBNEW_DEBUG_DECORATOR: public PNS::DEBUG_DECORATOR
 {
 public:
-    PNS_PCBNEW_DEBUG_DECORATOR( KIGFX::VIEW* aView = NULL ): PNS::DEBUG_DECORATOR(),
-        m_view( NULL ), m_items( NULL )
+    PNS_PCBNEW_DEBUG_DECORATOR( KIGFX::VIEW* aView = NULL ) :
+          DEBUG_DECORATOR()
+        , m_view ( NULL )
+        , m_items( NULL )
     {
         SetView( aView );
     }
@@ -297,23 +299,15 @@ public:
     ~PNS_PCBNEW_DEBUG_DECORATOR()
     {
         Clear();
-        delete m_items;
     }
 
     void SetView( KIGFX::VIEW* aView )
     {
         Clear();
-        delete m_items;
-        m_items = NULL;
         m_view = aView;
-
-        if( m_view == NULL )
-            return;
-
-        m_items = new KIGFX::VIEW_GROUP( m_view );
-        m_items->SetLayer( ITEM_GAL_LAYER( GP_OVERLAY ) );
-        m_view->Add( m_items );
-        m_items->ViewSetVisible( true );
+        m_items.SetLayer( ITEM_GAL_LAYER( GP_OVERLAY ) );
+        m_items.ResetView( m_view );
+        m_items.ViewSetVisible( true );
     }
 
     void AddPoint( VECTOR2I aP, int aColor ) override
@@ -375,38 +369,37 @@ public:
 
     void AddLine( const SHAPE_LINE_CHAIN& aLine, int aType, int aWidth ) override
     {
-        ROUTER_PREVIEW_ITEM* pitem = new ROUTER_PREVIEW_ITEM( NULL, m_items );
+        ROUTER_PREVIEW_ITEM* pitem = new ROUTER_PREVIEW_ITEM( NULL, &m_items );
 
         pitem->Line( aLine, aWidth, aType );
-        m_items->Add( pitem ); // Should not be needed, as m_items has been passed as a parent group in alloc;
+        m_items.Add( pitem ); // Should not be needed, as m_items has been passed as a parent group in alloc;
         pitem->ViewSetVisible( true );
-        m_items->ViewUpdate( KIGFX::VIEW_ITEM::GEOMETRY | KIGFX::VIEW_ITEM::APPEARANCE );
+        m_items.ViewUpdate( KIGFX::VIEW_ITEM::GEOMETRY | KIGFX::VIEW_ITEM::APPEARANCE );
     }
 
     void Clear() override
     {
-        if( m_view && m_items )
+        if( m_view )
         {
-            m_items->FreeItems();
-            m_items->ViewUpdate( KIGFX::VIEW_ITEM::GEOMETRY );
+            m_items.FreeItems();
+            m_items.ViewUpdate( KIGFX::VIEW_ITEM::GEOMETRY );
         }
     }
 
 private:
     KIGFX::VIEW* m_view;
-    KIGFX::VIEW_GROUP* m_items;
+    KIGFX::VIEW_GROUP m_items;
 };
 
 
 PNS::DEBUG_DECORATOR* PNS_KICAD_IFACE::GetDebugDecorator()
 {
-    return m_debugDecorator;
+    return m_debugDecorator.get();
 }
 
 
 PNS_KICAD_IFACE::PNS_KICAD_IFACE()
 {
-    m_ruleResolver = nullptr;
     m_board = nullptr;
     m_frame = nullptr;
     m_view = nullptr;
@@ -421,14 +414,7 @@ PNS_KICAD_IFACE::PNS_KICAD_IFACE()
 PNS_KICAD_IFACE::~PNS_KICAD_IFACE()
 {
     delete m_commit;
-    delete m_ruleResolver;
-    delete m_debugDecorator;
-
-    if( m_previewItems )
-    {
-        m_previewItems->FreeItems();
-        delete m_previewItems;
-    }
+    m_previewItems.FreeItems();
 }
 
 
@@ -757,10 +743,9 @@ void PNS_KICAD_IFACE::SyncWorld( PNS::NODE *aWorld )
 
     int worstClearance = m_board->GetDesignSettings().GetBiggestClearanceValue();
 
-    delete m_ruleResolver;
-    m_ruleResolver = new PNS_PCBNEW_RULE_RESOLVER( m_board, m_router );
+    m_ruleResolver.reset( new PNS_PCBNEW_RULE_RESOLVER( m_board, m_router ) );
 
-    aWorld->SetRuleResolver( m_ruleResolver );
+    aWorld->SetRuleResolver( m_ruleResolver.get() );
     aWorld->SetMaxClearance( 4 * worstClearance );
 }
 
@@ -772,10 +757,10 @@ void PNS_KICAD_IFACE::EraseView()
 
     m_hiddenItems.clear();
 
-    if( m_previewItems )
+    if( m_previewItems.GetSize() )
     {
-        m_previewItems->FreeItems();
-        m_previewItems->ViewUpdate( KIGFX::VIEW_ITEM::GEOMETRY );
+        m_previewItems.FreeItems();
+        m_previewItems.ViewUpdate( KIGFX::VIEW_ITEM::GEOMETRY );
     }
 
     if( m_debugDecorator )
@@ -787,7 +772,9 @@ void PNS_KICAD_IFACE::DisplayItem( const PNS::ITEM* aItem, int aColor, int aClea
 {
     wxLogTrace( "PNS", "DisplayItem %p", aItem );
 
-    ROUTER_PREVIEW_ITEM* pitem = new ROUTER_PREVIEW_ITEM( aItem, m_previewItems );
+    std::unique_ptr< ROUTER_PREVIEW_ITEM > pitem(
+        new ROUTER_PREVIEW_ITEM( aItem, &m_previewItems )
+    );
 
     if( aColor >= 0 )
         pitem->SetColor( KIGFX::COLOR4D( aColor ) );
@@ -795,10 +782,10 @@ void PNS_KICAD_IFACE::DisplayItem( const PNS::ITEM* aItem, int aColor, int aClea
     if( aClearance >= 0 )
         pitem->SetClearance( aClearance );
 
-    m_previewItems->Add( pitem );
-
     pitem->ViewSetVisible( true );
-    m_previewItems->ViewUpdate( KIGFX::VIEW_ITEM::GEOMETRY | KIGFX::VIEW_ITEM::APPEARANCE );
+    m_previewItems.Add( pitem.release() );
+
+    m_previewItems.ViewUpdate( KIGFX::VIEW_ITEM::GEOMETRY | KIGFX::VIEW_ITEM::APPEARANCE );
 }
 
 
@@ -889,20 +876,14 @@ void PNS_KICAD_IFACE::SetView( KIGFX::VIEW *aView )
 {
     wxLogTrace( "PNS", "SetView %p", aView );
 
-    if( m_previewItems )
-    {
-        m_previewItems->FreeItems();
-        delete m_previewItems;
-    }
+    m_previewItems.FreeItems();
 
     m_view = aView;
-    m_previewItems = new KIGFX::VIEW_GROUP( m_view );
-    m_previewItems->SetLayer( ITEM_GAL_LAYER( GP_OVERLAY ) );
-    m_view->Add( m_previewItems );
-    m_previewItems->ViewSetVisible( true );
+    m_previewItems.SetLayer( ITEM_GAL_LAYER( GP_OVERLAY ) );
+    m_previewItems.ResetView( m_view );
+    m_previewItems.ViewSetVisible( true );
 
-    delete m_debugDecorator;
-    m_debugDecorator = new PNS_PCBNEW_DEBUG_DECORATOR();
+    m_debugDecorator.reset( new PNS_PCBNEW_DEBUG_DECORATOR() );
     m_debugDecorator->SetView( m_view );
 }
 
@@ -914,7 +895,7 @@ void PNS_KICAD_IFACE::UpdateNet( int aNetCode )
 
 PNS::RULE_RESOLVER* PNS_KICAD_IFACE::GetRuleResolver()
 {
-    return m_ruleResolver;
+    return m_ruleResolver.get();
 }
 
 void PNS_KICAD_IFACE::SetRouter( PNS::ROUTER* aRouter )
