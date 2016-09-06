@@ -802,14 +802,13 @@ bool LINE_PLACER::Move( const VECTOR2I& aP, ITEM* aEndItem )
 {
     LINE current;
     VECTOR2I p = aP;
-    int eiDepth = -1;
+    bool item_deleted = false;
 
-/*
-    if( aEndItem && aEndItem->Owner() )
-        eiDepth = static_cast<NODE*>( aEndItem->Owner() )->Depth();
-*/
+    if( m_processedBranch.Owns( aEndItem ) ) {
+        item_deleted = true;
+    }
 
-    m_processedBranch.Commit();
+    m_processedBranch.Reset();
 
     route( p );
 
@@ -822,7 +821,7 @@ bool LINE_PLACER::Move( const VECTOR2I& aP, ITEM* aEndItem )
 
     m_processedBranch.Reset( m_node );
 
-    if( /* eiDepth >= 0 &&*/ aEndItem && /* m_node->Depth() > eiDepth  && */ current.SegmentCount() )
+    if( aEndItem &&  !item_deleted && current.SegmentCount() )
     {
         splitAdjacentSegments( m_node, aEndItem, current.CPoint( -1 ) );
 

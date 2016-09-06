@@ -179,6 +179,17 @@ namespace PNS {
         return here || (m_parent && m_parent->IsShadowed( aItem ));
     }
 
+    bool REVISION::Owns( const ITEM* aItem ) const
+    {
+        auto it = std::find_if(
+            m_added_items.begin(),
+            m_added_items.end(),
+            [aItem]( const std::unique_ptr< ITEM >& ptr ) { return ptr.get() == aItem; }
+        );
+
+        return it != m_added_items.end();
+    }
+
     std::unique_ptr< REVISION > REVISION::ReleaseBranch( const REVISION* aBranch )
     {
         auto it = std::find_if(

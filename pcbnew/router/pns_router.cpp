@@ -99,7 +99,6 @@ void ROUTER::SyncWorld( )
 {
     ClearWorld();
     m_iface->SyncWorld( &m_node );
-//    m_node.BranchMove();
 }
 
 void ROUTER::ResetWorld()
@@ -122,6 +121,7 @@ bool ROUTER::RoutingInProgress() const
 
 const ITEM_SET ROUTER::QueryHoverItems( const VECTOR2I& aP )
 {
+    // SCOPED_REVERT revert( &m_node, &m_world );
     return m_node.HitTest( aP );
 }
 

@@ -616,7 +616,7 @@ void DIFF_PAIR_PLACER::initPlacement()
 
     if( m_currentMode == RM_Shove || m_currentMode == RM_Smart )
     {
-        m_shove.reset( new SHOVE( m_currentNode, Router() ) );
+        m_shove.reset( new SHOVE( m_node, Router() ) );
     }
 }
 

@@ -541,6 +541,21 @@ public:
         m_node = nullptr;
     }
 
+    bool Owns( const ITEM* aItem )
+    {
+        if( !m_node ) return false;
+
+        auto* revision = m_node->GetRevision();
+        while( revision != m_old_revision ) {
+            if( revision->Owns( aItem ) ) {
+                return true;
+            }
+            revision = revision->Parent();
+        }
+
+        return false;
+    }
+
     REVISION* OriginalRevision()
     {
         return m_old_revision;
@@ -579,6 +594,46 @@ public:
 private:
     NODE* m_node;
     REVISION* m_old_revision;
+};
+
+class SCOPED_REVERT
+{
+public:
+    SCOPED_REVERT( NODE* aNode, REVISION* aAncestorRevision )
+        : m_node( nullptr )
+    {
+        Reset( aNode, aAncestorRevision );
+    }
+
+    void Reset()
+    {
+        if( m_node ) {
+            m_node->CheckoutDescendant( m_oldRevision );
+            m_node = nullptr;
+        }
+    }
+
+    void Reset( NODE* aNode, REVISION* aAncestorRevision )
+    {
+        if( m_node ) {
+            Reset();
+        }
+
+        if( aNode ) {
+            m_node = aNode;
+            m_oldRevision = m_node->GetRevision();
+            m_node->CheckoutAncestor( aAncestorRevision );
+        }
+    }
+
+    ~SCOPED_REVERT()
+    {
+        Reset();
+    }
+
+private:
+    NODE* m_node;
+    REVISION* m_oldRevision;
 };
 
 

@@ -157,6 +157,8 @@ namespace PNS {
          */
         bool IsShadowed( const ITEM* aItem );
 
+        bool Owns( const ITEM* aItem ) const;
+
         CHANGE_SET GetRevisionChanges() const;
         REVISION* Revert();
         void Clear();
