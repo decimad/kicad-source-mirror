@@ -546,7 +546,7 @@ bool SHOVE::reduceSpringback( const ITEM_SET& aHeadSet )
         SPRINGBACK_TAG spTag = m_nodeStack.back();
 
         REVISION* old_revision = m_node->GetRevision();
-        m_node->CheckoutAncestor( spTag.m_revision );
+        m_node->CheckoutRevision( spTag.m_revision );
 
         if( !m_node->CheckColliding( aHeadSet ) )
         {
@@ -556,7 +556,7 @@ bool SHOVE::reduceSpringback( const ITEM_SET& aHeadSet )
         }
         else
         {
-            m_node->CheckoutDescendant( old_revision );
+            m_node->CheckoutRevision( old_revision );
             assert( m_node->GetRevision() == old_revision );
             break;
         }

@@ -138,39 +138,32 @@ void NODE::RevertToParentRevision( REVISION* aAncestor )
     }
 }
 
-void NODE::CheckoutAncestor( REVISION* aAncestor )
+void NODE::CheckoutRevision( REVISION* aRevision )
 {
-    WalkPathUp( Path( aAncestor ) );
+    WalkPath( PNS::Path( m_revision, aRevision ) );
 }
 
-void NODE::CheckoutDescendant( REVISION* aDescendant )
+void NODE::WalkPath( const REVISION_PATH& aPath )
 {
-    WalkPathDown( aDescendant->Path( m_revision ) );
-}
-
-void NODE::WalkPathUp( const REVISION_PATH& aPath )
-{
-    for( auto revision : aPath )
+    for( auto revision : aPath.FromSequence() )
     {
         assert(revision == m_revision);
         --m_depth;
         revertRevision( revision );
         m_revision = m_revision->Parent();
     }
-}
 
-void NODE::WalkPathDown( const REVISION_PATH& aPath )
-{
-    for( auto it = aPath.rbegin(); it != aPath.rend(); ++it )
+    auto& toSequence = aPath.ToSequence();
+    for( auto revision : aPath.ToSequence() )
     {
-        assert( (*it)->Parent() == m_revision );
+        assert( revision->Parent() == m_revision );
         ++m_depth;
-        applyRevision( (*it) );
+        applyRevision( revision );
         // The paths are intended to hold const, we could translate the
         // the pointer to non-const by searching the revision's branches,
         // but given the calling code is wellformed (the above assertion
         // holds), it would result in the same result as a const_cast.
-        m_revision = const_cast<REVISION*>(*it);
+        m_revision = const_cast<REVISION*>(revision);
     }
 }
 

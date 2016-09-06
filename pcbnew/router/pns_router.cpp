@@ -265,7 +265,7 @@ void ROUTER::updateView( NODE* aNode, ITEM_SET& aCurrent )
     if( Settings().Mode() == RM_MarkObstacles )
         markViolations( aNode, aCurrent, removed );
 
-    CHANGE_SET changes = CHANGE_SET::FromPath( m_node.Path( &m_world ) );
+    CHANGE_SET changes = CHANGE_SET::FromPath( Path( &m_world, m_node.GetRevision() ) );
 
     for( auto item : changes.AddedItems() )
         m_iface->DisplayItem( item );

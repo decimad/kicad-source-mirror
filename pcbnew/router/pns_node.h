@@ -167,10 +167,10 @@ public:
 
     CHANGE_SET GetRevisionChanges() const;
 
-    void CheckoutAncestor  ( REVISION* aAncestor );
-    void CheckoutDescendant( REVISION* aDescendant );
+    void CheckoutRevision( REVISION* aAncestor );
+//    void CheckoutDescendant( REVISION* aDescendant );
 
-    void WalkPathUp  ( const REVISION_PATH& aPath );
+    void WalkPath( const REVISION_PATH& aPath );
     void WalkPathDown( const REVISION_PATH& aPath );
 
     REVISION* GetRevision();
@@ -608,7 +608,7 @@ public:
     void Reset()
     {
         if( m_node ) {
-            m_node->CheckoutDescendant( m_oldRevision );
+            m_node->CheckoutRevision( m_oldRevision );
             m_node = nullptr;
         }
     }
@@ -622,7 +622,7 @@ public:
         if( aNode ) {
             m_node = aNode;
             m_oldRevision = m_node->GetRevision();
-            m_node->CheckoutAncestor( aAncestorRevision );
+            m_node->CheckoutRevision( aAncestorRevision );
         }
     }
 

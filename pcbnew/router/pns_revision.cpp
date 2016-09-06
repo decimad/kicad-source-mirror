@@ -90,11 +90,14 @@ namespace PNS {
     CHANGE_SET CHANGE_SET::FromPath( const REVISION_PATH& aPath )
     {
         CHANGE_SET result;
-        auto copy = aPath;  // fixme
-        std::reverse( copy.begin(), copy.end() );
 
-        for( auto diffstate : aPath ) {
-            result.Apply( diffstate );
+        for( auto& revert : aPath.FromSequence() ) {
+            result.Revert( revert );
+        }
+
+        for( auto& apply : aPath.ToSequence() )
+        {
+            result.Apply( apply );
         }
 
         return result;
@@ -120,6 +123,34 @@ namespace PNS {
         return{ m_removed_items.begin(), m_removed_items.end() };
     }
 
+    //
+    // REVISION_PATH
+    //
+
+    REVISION_PATH::REVISION_PATH( std::vector<const REVISION*> aFrom, std::vector<const REVISION*> aTo ) :
+        m_from( std::move( aFrom ) ), m_to( std::move( aTo ) )
+    {
+    }
+
+    void REVISION_PATH::Invert()
+    {
+        std::swap( m_from, m_to );
+    }
+
+    size_t REVISION_PATH::Size() const
+    {
+        return m_from.size() + m_to.size();
+    }
+
+    SEQUENCE<REVISION_PATH::FROM_ITERATOR> REVISION_PATH::FromSequence() const
+    {
+        return{ m_from.begin(), m_from.end() };
+    }
+
+    SEQUENCE<REVISION_PATH::TO_ITERATOR> REVISION_PATH::ToSequence() const
+    {
+        return{ m_to.rbegin(), m_to.rend() };
+    }
 
     //
     // DiffState
@@ -203,6 +234,7 @@ namespace PNS {
             auto ptr = std::move( *it );
             m_branches.erase( it );
             ptr->m_parent = nullptr;
+            ptr->m_depth = 0;
             return ptr;
         }
         else
@@ -281,7 +313,7 @@ namespace PNS {
 
     REVISION_PATH REVISION::Path( const REVISION * aAncestor ) const
     {
-        REVISION_PATH result;
+        std::vector< const REVISION* > result;
         const REVISION* state = this;
 
         while( state != aAncestor )
@@ -290,7 +322,7 @@ namespace PNS {
             state = state->Parent();
         }
 
-        return result;
+        return { std::move( result ), {} };
     }
 
     SEQUENCE< REVISION::ADDED_ITEM_ITERATOR > REVISION::AddedItems()
@@ -322,5 +354,58 @@ namespace PNS {
     {
         return{ m_branches.begin(), m_branches.end() };
     }
+
+    REVISION_PATH Path( const REVISION* aFrom, const REVISION* aTo )
+    {
+        size_t fromDepth = aFrom->Depth();
+        size_t toDepth   = aTo->Depth();
+
+        if( aFrom != aTo ) {
+            bool break_here = true;
+        }
+
+        std::vector< const REVISION* > from, to;
+        from.reserve( fromDepth > toDepth   ? fromDepth - toDepth   : 0 );
+        to.reserve  ( toDepth   > fromDepth ? toDepth   - fromDepth : 0 );
+
+        while( fromDepth > toDepth ) {
+            from.push_back( aFrom );
+            aFrom = aFrom->Parent();
+            --fromDepth;
+        }
+
+        while( toDepth > fromDepth ) {
+            to.push_back( aTo );
+            aTo = aTo->Parent();
+            --toDepth;
+        }
+
+        while( aFrom && aTo && aFrom != aTo ) {
+            from.push_back( aFrom );
+            to.push_back( aTo );
+            aFrom = aFrom->Parent();
+            aTo = aTo->Parent();
+        }
+
+        assert( aFrom == aTo );
+        assert( aFrom != nullptr );
+
+        return{ std::move(from), std::move(to) };
+    }
+
+    size_t REVISION::Depth() const
+    {
+        // Could also add this as member, but that would mean more state to keep up to date.
+        size_t depth = 0;
+        REVISION* rev = m_parent;
+
+        while( rev ) {
+            ++depth;
+            rev = rev->Parent();
+        }
+
+        return depth;
+    }
+
 
 }

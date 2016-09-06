@@ -38,9 +38,6 @@ namespace PNS {
     class ITEM;
     class REVISION;
 
-    /// Note: Paths are directed towards roots
-    using REVISION_PATH = std::vector< const REVISION* >;
-
     ///
     /// Class SEQUENCE
     /// Wraps up a [start, end) iterator sequence.
@@ -71,6 +68,35 @@ namespace PNS {
 
     private:
         ITERATOR m_begin, m_end;
+    };
+
+    ///
+    /// Class REVISION_PATH
+    ///
+
+    class REVISION_PATH {
+    public:
+        using FROM_ITERATOR = std::vector< const REVISION* >::const_iterator;
+        using TO_ITERATOR   = std::vector< const REVISION* >::const_reverse_iterator;
+
+        REVISION_PATH( std::vector< const REVISION*> aFrom, std::vector< const REVISION*> aTo );
+        REVISION_PATH( REVISION_PATH&& ) = default;
+        REVISION_PATH( const REVISION_PATH& ) = default;
+        REVISION_PATH& operator=( REVISION_PATH&& ) = default;
+        REVISION_PATH& operator=( const REVISION_PATH& ) = default;
+
+        void Invert();
+        size_t Size() const;
+
+        // these need to be reverted in order
+        SEQUENCE<FROM_ITERATOR> FromSequence() const;
+
+        // these need to be applied in order
+        SEQUENCE<TO_ITERATOR>   ToSequence() const;
+
+    private:
+        std::vector< const REVISION* > m_from;  // upwards
+        std::vector< const REVISION* > m_to;    // upwards
     };
 
     ///
@@ -159,6 +185,8 @@ namespace PNS {
 
         bool Owns( const ITEM* aItem ) const;
 
+        size_t Depth() const;
+
         CHANGE_SET GetRevisionChanges() const;
         REVISION* Revert();
         void Clear();
@@ -245,11 +273,15 @@ namespace PNS {
         void Absorb( REVISION* aDiff );
 
         REVISION* m_parent;
+        size_t m_depth;
+
         std::vector< std::unique_ptr< REVISION > > m_branches;
 
         std::vector< std::unique_ptr< ITEM > > m_added_items;
         std::vector< ITEM* >                   m_removed_items;
     };
+
+    REVISION_PATH Path( const REVISION* aFrom, const REVISION* aTo );
 
 
 
