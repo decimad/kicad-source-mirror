@@ -91,11 +91,12 @@ namespace PNS {
     {
         CHANGE_SET result;
 
-        for( auto& revert : aPath.FromSequence() ) {
+        for( auto& revert : aPath.RevertSequence() )
+        {
             result.Revert( revert );
         }
 
-        for( auto& apply : aPath.ToSequence() )
+        for( auto& apply : aPath.ApplySequence() )
         {
             result.Apply( apply );
         }
@@ -127,29 +128,30 @@ namespace PNS {
     // REVISION_PATH
     //
 
-    REVISION_PATH::REVISION_PATH( std::vector<const REVISION*> aFrom, std::vector<const REVISION*> aTo ) :
-        m_from( std::move( aFrom ) ), m_to( std::move( aTo ) )
+    REVISION_PATH::REVISION_PATH( std::vector<const REVISION*> aRevertList,
+                                  std::vector<const REVISION*> aApplyList ) :
+        m_revert( std::move( aRevertList ) ), m_apply( std::move( aApplyList ) )
     {
     }
 
     void REVISION_PATH::Invert()
     {
-        std::swap( m_from, m_to );
+        std::swap( m_revert, m_apply );
     }
 
     size_t REVISION_PATH::Size() const
     {
-        return m_from.size() + m_to.size();
+        return m_revert.size() + m_apply.size();
     }
 
-    SEQUENCE<REVISION_PATH::FROM_ITERATOR> REVISION_PATH::FromSequence() const
+    SEQUENCE<REVISION_PATH::REVERT_ITERATOR> REVISION_PATH::RevertSequence() const
     {
-        return{ m_from.begin(), m_from.end() };
+        return{ m_revert.begin(), m_revert.end() };
     }
 
-    SEQUENCE<REVISION_PATH::TO_ITERATOR> REVISION_PATH::ToSequence() const
+    SEQUENCE<REVISION_PATH::APPLY_ITERATOR> REVISION_PATH::ApplySequence() const
     {
-        return{ m_to.rbegin(), m_to.rend() };
+        return{ m_apply.rbegin(), m_apply.rend() };
     }
 
     //
@@ -406,6 +408,5 @@ namespace PNS {
 
         return depth;
     }
-
 
 }

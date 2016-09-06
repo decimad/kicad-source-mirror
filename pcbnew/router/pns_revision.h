@@ -76,10 +76,11 @@ namespace PNS {
 
     class REVISION_PATH {
     public:
-        using FROM_ITERATOR = std::vector< const REVISION* >::const_iterator;
-        using TO_ITERATOR   = std::vector< const REVISION* >::const_reverse_iterator;
+        using REVERT_ITERATOR = std::vector< const REVISION* >::const_iterator;
+        using APPLY_ITERATOR  = std::vector< const REVISION* >::const_reverse_iterator;
 
-        REVISION_PATH( std::vector< const REVISION*> aFrom, std::vector< const REVISION*> aTo );
+        REVISION_PATH( std::vector< const REVISION*> aRevertList,
+                       std::vector< const REVISION*> aApplyList );
         REVISION_PATH( REVISION_PATH&& ) = default;
         REVISION_PATH( const REVISION_PATH& ) = default;
         REVISION_PATH& operator=( REVISION_PATH&& ) = default;
@@ -89,14 +90,14 @@ namespace PNS {
         size_t Size() const;
 
         // these need to be reverted in order
-        SEQUENCE<FROM_ITERATOR> FromSequence() const;
+        SEQUENCE<REVERT_ITERATOR> RevertSequence() const;
 
         // these need to be applied in order
-        SEQUENCE<TO_ITERATOR>   ToSequence() const;
+        SEQUENCE<APPLY_ITERATOR> ApplySequence() const;
 
     private:
-        std::vector< const REVISION* > m_from;  // upwards
-        std::vector< const REVISION* > m_to;    // upwards
+        std::vector< const REVISION* > m_revert;  // upwards
+        std::vector< const REVISION* > m_apply;   // upwards
     };
 
     ///

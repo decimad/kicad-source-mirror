@@ -145,7 +145,7 @@ void NODE::CheckoutRevision( REVISION* aRevision )
 
 void NODE::WalkPath( const REVISION_PATH& aPath )
 {
-    for( auto revision : aPath.FromSequence() )
+    for( auto revision : aPath.RevertSequence() )
     {
         assert(revision == m_revision);
         --m_depth;
@@ -153,8 +153,7 @@ void NODE::WalkPath( const REVISION_PATH& aPath )
         m_revision = m_revision->Parent();
     }
 
-    auto& toSequence = aPath.ToSequence();
-    for( auto revision : aPath.ToSequence() )
+    for( auto revision : aPath.ApplySequence() )
     {
         assert( revision->Parent() == m_revision );
         ++m_depth;
