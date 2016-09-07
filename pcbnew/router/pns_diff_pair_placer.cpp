@@ -360,10 +360,10 @@ void DIFF_PAIR_PLACER::FlipPosture()
 }
 
 
-NODE* DIFF_PAIR_PLACER::CurrentNode( bool aLoopsRemoved ) const
+SCOPED_CHECKOUT DIFF_PAIR_PLACER::CurrentNode( bool aLoopsRemoved ) const
 {
     // fixme, use m_hasPostprocessed
-    return m_node;
+    return SCOPED_CHECKOUT( m_node );
 }
 
 bool DIFF_PAIR_PLACER::SetLayer( int aLayer )

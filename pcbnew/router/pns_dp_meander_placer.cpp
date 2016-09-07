@@ -58,9 +58,9 @@ const LINE DP_MEANDER_PLACER::Trace() const
 }
 
 
-NODE* DP_MEANDER_PLACER::CurrentNode( bool aLoopsRemoved ) const
+SCOPED_CHECKOUT DP_MEANDER_PLACER::CurrentNode( bool aLoopsRemoved ) const
 {
-    return m_node;
+    return SCOPED_CHECKOUT( m_node );
 }
 
 

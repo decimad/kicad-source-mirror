@@ -149,7 +149,7 @@ public:
      *
      * Returns the most recent board state.
      */
-    virtual NODE* CurrentNode( bool aLoopsRemoved = false ) const = 0;
+    virtual SCOPED_CHECKOUT CurrentNode( bool aLoopsRemoved = false ) const = 0;
 
     /**
      * Function FlipPosture()

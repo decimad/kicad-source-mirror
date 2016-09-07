@@ -51,9 +51,9 @@ void MEANDER_PLACER::setWorld( NODE* aNode )
     m_node = aNode;
 }
 
-NODE* MEANDER_PLACER::CurrentNode( bool aLoopsRemoved ) const
+SCOPED_CHECKOUT MEANDER_PLACER::CurrentNode( bool aLoopsRemoved ) const
 {
-    return m_node;
+    return SCOPED_CHECKOUT( m_node );
 }
 
 bool MEANDER_PLACER::Start( const VECTOR2I& aP, ITEM* aStartItem )

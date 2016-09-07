@@ -670,9 +670,15 @@ void LINE_PLACER::FlipPosture()
 }
 
 
-NODE* LINE_PLACER::CurrentNode( bool aLoopsRemoved ) const
+SCOPED_CHECKOUT LINE_PLACER::CurrentNode( bool aLoopsRemoved ) const
 {
-    return m_node;
+    if( m_processedBranch ) {
+        return SCOPED_CHECKOUT( m_node, aLoopsRemoved ?
+            m_node->GetRevision() : m_processedBranch.OriginalRevision()
+        );
+    } else {
+        return SCOPED_CHECKOUT( m_node );
+    }
 }
 
 
@@ -780,6 +786,7 @@ void LINE_PLACER::initPlacement()
     //Router()->ResetWorld();
 
     setWorld( Router()->GetWorld() );
+    m_processedBranch.Reset();
     m_workingBranch.Reset( m_node );
 
     splitAdjacentSegments( m_node, m_startItem, m_currentStart );

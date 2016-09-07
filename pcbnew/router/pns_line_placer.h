@@ -165,7 +165,7 @@ public:
      *
      * Returns the most recent world state.
      */
-    NODE* CurrentNode( bool aLoopsRemoved = false ) const;
+    SCOPED_CHECKOUT CurrentNode( bool aLoopsRemoved = false ) const;
 
     /**
      * Function FlipPosture()

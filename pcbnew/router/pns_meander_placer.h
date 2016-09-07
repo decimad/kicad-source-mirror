@@ -65,7 +65,7 @@ public:
     virtual bool CommitRoute( const VECTOR2I& aP, ITEM* aEndItem );
 
     /// @copydoc PLACEMENT_ALGO::CurrentNode()
-    NODE* CurrentNode( bool aLoopsRemoved = false ) const;
+    SCOPED_CHECKOUT CurrentNode( bool aLoopsRemoved = false ) const;
 
     /// @copydoc PLACEMENT_ALGO::Traces()
     const ITEM_SET Traces();
