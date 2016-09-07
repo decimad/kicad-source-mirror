@@ -1107,7 +1107,7 @@ SHOVE::SHOVE_STATUS SHOVE::ShoveLines( const LINE& aCurrentHead )
 
     SCOPED_BRANCH branch( m_node );
     m_node->ClearRanks();
-    m_node->Add( head );
+    m_node->Add( head, true );
 
     m_node->LockJoint( head.CPoint(0), &head, true );
 
