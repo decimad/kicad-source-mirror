@@ -167,7 +167,7 @@ public:
 
     CHANGE_SET GetRevisionChanges() const;
 
-    void CheckoutRevision( REVISION* aAncestor );
+    void CheckoutRevision( const REVISION* aAncestor );
 //    void CheckoutDescendant( REVISION* aDescendant );
 
     void WalkPath( const REVISION_PATH& aPath );
@@ -229,7 +229,7 @@ public:
     ///> Returns the number of nodes in the inheritance chain (wrs to the root node)
     int Depth() const
     {
-        return m_depth;
+        return m_revision->Depth();
     }
 
     /**
@@ -503,9 +503,6 @@ private:
 
     ///> Current revision
     REVISION* m_revision;
-
-    ///> depth of the node (number of parent nodes in the inheritance chain)
-    int m_depth;
 };
 
 class SCOPED_BRANCH
@@ -556,7 +553,7 @@ public:
         return false;
     }
 
-    REVISION* OriginalRevision()
+    const REVISION* OriginalRevision() const
     {
         return m_old_revision;
     }
