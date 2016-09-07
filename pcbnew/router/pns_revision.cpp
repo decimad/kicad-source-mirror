@@ -237,7 +237,6 @@ namespace PNS {
             auto ptr = std::move( *it );
             m_branches.erase( it );
             ptr->m_parent = nullptr;
-            ptr->m_depth = 0;
             return ptr;
         }
         else

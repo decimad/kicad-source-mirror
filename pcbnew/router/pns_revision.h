@@ -43,7 +43,7 @@ namespace PNS {
     /// Wraps up a [start, end) iterator sequence.
     ///
 
-    template< typename ITERATOR >
+    template<typename ITERATOR>
     class SEQUENCE
     {
     public:
@@ -76,28 +76,47 @@ namespace PNS {
 
     class REVISION_PATH {
     public:
-        using REVERT_ITERATOR = std::vector< const REVISION* >::const_iterator;
-        using APPLY_ITERATOR  = std::vector< const REVISION* >::const_reverse_iterator;
+        using REVERT_ITERATOR = std::vector<const REVISION*>::const_iterator;
+        using APPLY_ITERATOR  = std::vector<const REVISION*>::const_reverse_iterator;
 
-        REVISION_PATH( std::vector< const REVISION*> aRevertList,
-                       std::vector< const REVISION*> aApplyList );
+        REVISION_PATH( std::vector<const REVISION*> aRevertList,
+                       std::vector<const REVISION*> aApplyList );
         REVISION_PATH( REVISION_PATH&& ) = default;
         REVISION_PATH( const REVISION_PATH& ) = default;
         REVISION_PATH& operator=( REVISION_PATH&& ) = default;
         REVISION_PATH& operator=( const REVISION_PATH& ) = default;
 
+        /**
+         * Function Invert
+         * Inverts this path so it moves from former destination to former origin
+         */
         void Invert();
+
+        /**
+         * Function Size
+         * Returns the number of revisions on the Path from source revision
+         * to destination revision.
+         */
         size_t Size() const;
 
-        // these need to be reverted in order
+        /**
+         * Function RevertSequence
+         * Returns an iterator-sequence of the revisions that need to be reverted
+         * on this path to reach the destination revision.
+         */
         SEQUENCE<REVERT_ITERATOR> RevertSequence() const;
 
-        // these need to be applied in order
+        /**
+         * Function ApplySequence
+         * Returns an iterator-sequence of the revisions that need to be applied
+         * on this path to reach the destination revision.
+         * @note These need to be applied AFTER the revert sequence has been completely reverted
+         */
         SEQUENCE<APPLY_ITERATOR> ApplySequence() const;
 
     private:
-        std::vector< const REVISION* > m_revert;  // upwards
-        std::vector< const REVISION* > m_apply;   // upwards
+        std::vector<const REVISION*> m_revert;  // upwards
+        std::vector<const REVISION*> m_apply;   // upwards
     };
 
     ///
@@ -124,11 +143,11 @@ namespace PNS {
 
         static CHANGE_SET FromPath( const REVISION_PATH& aPath );
 
-        SEQUENCE< ITEM_ITERATOR >       AddedItems();
-        SEQUENCE< CONST_ITEM_ITERATOR > AddedItems() const;
+        SEQUENCE<ITEM_ITERATOR>       AddedItems();
+        SEQUENCE<CONST_ITEM_ITERATOR> AddedItems() const;
 
-        SEQUENCE< ITEM_ITERATOR >       RemovedItems();
-        SEQUENCE< CONST_ITEM_ITERATOR > RemovedItems() const;
+        SEQUENCE<ITEM_ITERATOR>       RemovedItems();
+        SEQUENCE<CONST_ITEM_ITERATOR> RemovedItems() const;
 
     private:
         ITEMS_CONTAINER m_added_items;
@@ -146,9 +165,9 @@ namespace PNS {
         ~REVISION();
 
     private:
-        using ADDED_ITEMS_CONTAINER   = std::vector< std::unique_ptr< ITEM > >;
-        using REMOVED_ITEMS_CONTAINER = std::vector< ITEM* >;
-        using BRANCHES_CONTAINER      = std::vector< std::unique_ptr< REVISION > >;
+        using ADDED_ITEMS_CONTAINER   = std::vector<std::unique_ptr<ITEM>>;
+        using REMOVED_ITEMS_CONTAINER = std::vector<ITEM*>;
+        using BRANCHES_CONTAINER      = std::vector<std::unique_ptr<REVISION>>;
 
     public:
         using ADDED_ITEM_ITERATOR         = ADDED_ITEMS_CONTAINER::iterator;
@@ -184,12 +203,34 @@ namespace PNS {
          */
         bool IsShadowed( const ITEM* aItem );
 
+        /**
+         * Function Owns
+         * Determines whether aItem is owned by this revision
+         */
         bool Owns( const ITEM* aItem ) const;
 
+        /**
+         * Function Depth
+         * Returns the depth of this revision in the revision tree (0 = root)
+         */
         size_t Depth() const;
 
+        /**
+         * Function GetRevisionChanges
+         * Returns a CHANGE_SET with the changes introduced in this revision only
+         */
         CHANGE_SET GetRevisionChanges() const;
+
+        /**
+         * Function Revert
+         * Removes and deletes this revision and returns a pointer to its former parent
+         */
         REVISION* Revert();
+
+        /**
+         * Function Clear
+         * Reset this revision's change-set.
+         */
         void Clear();
 
         /**
@@ -233,7 +274,7 @@ namespace PNS {
          * @param aBranch Pointer to a branch
          * @return Owning pointer to the former branch.
          */
-        std::unique_ptr< REVISION > ReleaseBranch( const REVISION* aBranch );
+        std::unique_ptr<REVISION> ReleaseBranch( const REVISION* aBranch );
 
         /**
          * Function Parent
@@ -251,8 +292,7 @@ namespace PNS {
 
         /**
          * Function Path
-         * Returns a path of DIFF_STATEs from this revision to an ancestor revion. Paths are
-         * always directed towards the root of the revision tree.
+         * Returns a path of REVISIONs from this revision to an ancestor revion.
          * @note Undefined behaviour if aAncestor is not an ancestor of this revision
          * @pre Parent()[->Parent()*] == aAncestor
          */
@@ -275,15 +315,18 @@ namespace PNS {
 
         REVISION* m_parent;
 
-        std::vector< std::unique_ptr< REVISION > > m_branches;
+        std::vector<std::unique_ptr<REVISION>> m_branches;
 
-        std::vector< std::unique_ptr< ITEM > > m_added_items;
-        std::vector< ITEM* >                   m_removed_items;
+        std::vector<std::unique_ptr< ITEM >> m_added_items;
+        std::vector<ITEM*>                   m_removed_items;
     };
 
+    /**
+     * Function Path
+     * Calculates the revision path from revision aFrom to revision aTo
+     * @note Undefined behaviour if aFrom and aTo are not parts of the same revision tree
+     */
     REVISION_PATH Path( const REVISION* aFrom, const REVISION* aTo );
-
-
 
 }
 
