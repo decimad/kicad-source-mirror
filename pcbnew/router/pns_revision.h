@@ -274,7 +274,6 @@ namespace PNS {
         void Absorb( REVISION* aDiff );
 
         REVISION* m_parent;
-        size_t m_depth;
 
         std::vector< std::unique_ptr< REVISION > > m_branches;
 
