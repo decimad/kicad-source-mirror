@@ -568,7 +568,6 @@ void NODE::addSolidIndex( SOLID* aSolid )
 
 void NODE::Add( std::unique_ptr< SOLID > aSolid )
 {
-    aSolid->SetOwner( this );
     addSolidIndex( aSolid.get() );
     m_revision->AddItem( std::move( aSolid ) );
 }
@@ -581,7 +580,6 @@ void NODE::addViaIndex( VIA* aVia )
 
 void NODE::Add( std::unique_ptr< VIA > aVia )
 {
-    aVia->SetOwner( this );
     addViaIndex( aVia.get() );
     m_revision->AddItem( std::move( aVia ) );
 }
@@ -613,7 +611,7 @@ void NODE::Add( LINE& aLine, bool aAllowRedundant )
             }
         }
     }
-    aLine.SetOwner( this );
+    aLine.SetOwner( GetRevision() );
 }
 
 void NODE::addSegmentIndex( SEGMENT* aSeg )
@@ -634,7 +632,6 @@ void NODE::Add( std::unique_ptr< SEGMENT > aSegment, bool aAllowRedundant )
     if( !aAllowRedundant && findRedundantSegment( aSegment.get() ) )
         return;
 
-    aSegment->SetOwner( this );
     addSegmentIndex( aSegment.get() );
     m_revision->AddItem( std::move( aSegment ) );
 }
@@ -885,7 +882,7 @@ const LINE NODE::AssembleLine( SEGMENT* aSeg, int* aOriginSegmentIndex, bool aSt
     pl.SetWidth( aSeg->Width() );
     pl.SetLayers( aSeg->Layers() );
     pl.SetNet( aSeg->Net() );
-    pl.SetOwner( this );
+    pl.SetOwner( GetRevision() );
 
     followLine( aSeg, false, i_start, MaxVerts, corners, segs, guardHit, aStopAtLockedJoints );
 

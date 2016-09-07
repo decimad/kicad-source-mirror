@@ -35,6 +35,7 @@ class BOARD_CONNECTED_ITEM;
 namespace PNS {
 
 class NODE;
+class REVISION;
 
 enum LineMarker {
     MK_HEAD         = ( 1 << 0 ),
@@ -234,9 +235,9 @@ public:
      * Functon SetOwner()
      *
      * Sets the node that owns this item. An item can belong to a single
-     * NODE or stay unowned.
+     * REVISION or stay unowned.
      */
-    void SetOwner( NODE* aOwner )
+    void SetOwner( REVISION* aOwner )
     {
         m_owner = aOwner;
     }
@@ -246,7 +247,7 @@ public:
      *
      * @return true if the item is owned by the node aNode.
      */
-    bool BelongsTo( NODE* aNode ) const
+    bool BelongsTo( REVISION* aNode ) const
     {
         return m_owner == aNode;
     }
@@ -256,7 +257,7 @@ public:
      *
      * Returns the owner of this item, or NULL if there's none.
      */
-    NODE* Owner() const { return m_owner; }
+    REVISION* Owner() const { return m_owner; }
 
     /**
      * Function Collide()
@@ -346,7 +347,7 @@ protected:
     PnsKind                 m_kind;
 
     BOARD_CONNECTED_ITEM*   m_parent;
-    NODE*               m_owner;
+    REVISION*               m_owner;
     LAYER_RANGE            m_layers;
 
     bool                    m_movable;

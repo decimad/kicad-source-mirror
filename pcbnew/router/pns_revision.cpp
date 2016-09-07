@@ -183,6 +183,7 @@ namespace PNS {
 
     void REVISION::AddItem( std::unique_ptr< ITEM > aItem )
     {
+        aItem->SetOwner( this );
         m_added_items.push_back( std::move( aItem ) );
     }
 
