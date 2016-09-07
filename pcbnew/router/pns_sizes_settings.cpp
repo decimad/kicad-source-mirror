@@ -26,10 +26,11 @@
 #include "pns_solid.h"
 #include "pns_node.h"
 #include "pns_sizes_settings.h"
+#include "pns_router.h"
 
 namespace PNS {
 
-int SIZES_SETTINGS::inheritTrackWidth( ITEM* aItem )
+int SIZES_SETTINGS::inheritTrackWidth( ITEM* aItem, ROUTER* aRouter )
 {
     VECTOR2I p;
 
@@ -52,7 +53,9 @@ int SIZES_SETTINGS::inheritTrackWidth( ITEM* aItem )
         return 0;
     }
 
-    JOINT* jt = static_cast<NODE*>( aItem->Owner() )->FindJoint( p, aItem );
+    JOINT* jt = aRouter->GetWorld()->FindJoint( p, aItem  );
+    /// @fixme: :(((((( Owner?
+    // JOINT* jt = static_cast<NODE*>( aItem->Owner() )->FindJoint( p, aItem );
 
     assert( jt != NULL );
 
@@ -72,7 +75,7 @@ int SIZES_SETTINGS::inheritTrackWidth( ITEM* aItem )
 }
 
 
-void SIZES_SETTINGS::Init( BOARD* aBoard, ITEM* aStartItem, int aNet )
+void SIZES_SETTINGS::Init( BOARD* aBoard, ROUTER* aRouter, ITEM* aStartItem, int aNet )
 {
     BOARD_DESIGN_SETTINGS &bds = aBoard->GetDesignSettings();
 
@@ -100,7 +103,7 @@ void SIZES_SETTINGS::Init( BOARD* aBoard, ITEM* aStartItem, int aNet )
 
     if( bds.m_UseConnectedTrackWidth && aStartItem != NULL )
     {
-        m_trackWidth = inheritTrackWidth( aStartItem );
+        m_trackWidth = inheritTrackWidth( aStartItem, aRouter );
     }
 
     if( !m_trackWidth && ( bds.UseNetClassTrack() && netClass != NULL ) ) // netclass value

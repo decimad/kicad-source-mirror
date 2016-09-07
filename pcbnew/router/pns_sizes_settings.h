@@ -33,6 +33,7 @@ class BOARD_DESIGN_SETTINGS;
 namespace PNS {
 
 class ITEM;
+class ROUTER;
 
 class SIZES_SETTINGS {
 
@@ -50,7 +51,7 @@ public:
 
     ~SIZES_SETTINGS() {};
 
-    void Init( BOARD* aBoard, ITEM* aStartItem = NULL, int aNet = -1 );
+    void Init( BOARD* aBoard, ROUTER* aRouter, ITEM* aStartItem = NULL, int aNet = -1 );
     void ImportCurrent( BOARD_DESIGN_SETTINGS& aSettings );
 
     void ClearLayerPairs();
@@ -98,7 +99,7 @@ public:
 
 private:
 
-    int inheritTrackWidth( ITEM* aItem );
+    int inheritTrackWidth( ITEM* aItem, ROUTER* aRouter );
 
     int m_trackWidth;
     int m_diffPairWidth;

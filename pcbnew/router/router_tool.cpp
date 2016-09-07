@@ -509,7 +509,7 @@ bool ROUTER_TOOL::prepareInteractive()
 
     PNS::SIZES_SETTINGS sizes( m_router->Sizes() );
 
-    sizes.Init( m_board, m_startItem );
+    sizes.Init( m_board, m_router, m_startItem );
     sizes.AddLayerPair( m_frame->GetScreen()->m_Route_Layer_TOP,
                         m_frame->GetScreen()->m_Route_Layer_BOTTOM );
     m_router->UpdateSizes( sizes );
