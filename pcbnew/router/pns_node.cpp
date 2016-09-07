@@ -47,7 +47,6 @@ NODE::NODE( REVISION* aRevision )
     : m_revision( aRevision )
 {
     wxLogTrace( "PNS", "NODE::create %p", this );
-    m_depth = 0;
     m_maxClearance = 800000;    // fixme: depends on how thick traces are.
     m_ruleResolver = NULL;
 }
@@ -89,13 +88,11 @@ REVISION* NODE::BranchMove()
 {
     REVISION* result = m_revision;
     m_revision = m_revision->Branch();
-    ++m_depth;
     return result;
 }
 
 void NODE::Squash()
 {
-    --m_depth;
     m_revision = m_revision->Squash();
 }
 
@@ -117,7 +114,6 @@ void NODE::SquashToParentRevision( REVISION* aAncestor )
 
 void NODE::Revert()
 {
-    --m_depth;
     revertRevision( m_revision );
     m_revision = m_revision->Revert();
 }
@@ -138,7 +134,7 @@ void NODE::RevertToParentRevision( REVISION* aAncestor )
     }
 }
 
-void NODE::CheckoutRevision( REVISION* aRevision )
+void NODE::CheckoutRevision( const REVISION* aRevision )
 {
     WalkPath( PNS::Path( m_revision, aRevision ) );
 }
@@ -148,7 +144,6 @@ void NODE::WalkPath( const REVISION_PATH& aPath )
     for( auto revision : aPath.RevertSequence() )
     {
         assert(revision == m_revision);
-        --m_depth;
         revertRevision( revision );
         m_revision = m_revision->Parent();
     }
@@ -156,7 +151,6 @@ void NODE::WalkPath( const REVISION_PATH& aPath )
     for( auto revision : aPath.ApplySequence() )
     {
         assert( revision->Parent() == m_revision );
-        ++m_depth;
         applyRevision( revision );
         // The paths are intended to hold const, we could translate the
         // the pointer to non-const by searching the revision's branches,
