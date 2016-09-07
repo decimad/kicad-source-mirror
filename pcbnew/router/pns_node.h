@@ -593,13 +593,36 @@ private:
     REVISION* m_old_revision;
 };
 
-class SCOPED_REVERT
+class SCOPED_CHECKOUT
 {
 public:
-    SCOPED_REVERT( NODE* aNode, REVISION* aAncestorRevision )
+    SCOPED_CHECKOUT( NODE* aNode, const REVISION* aCheckoutRevision )
         : m_node( nullptr )
     {
-        Reset( aNode, aAncestorRevision );
+        Reset( aNode, aCheckoutRevision );
+    }
+
+    SCOPED_CHECKOUT( NODE* aNode )
+        : m_node( aNode ), m_oldRevision( aNode->GetRevision() )
+    {}
+
+    SCOPED_CHECKOUT()
+        : m_node( nullptr )
+    {}
+
+    SCOPED_CHECKOUT( SCOPED_CHECKOUT&& aOther )
+        : m_node( aOther.m_node ), m_oldRevision( aOther.m_oldRevision )
+    {
+        aOther.m_node = nullptr;
+    }
+
+    SCOPED_CHECKOUT& operator=( SCOPED_CHECKOUT&& aOther )
+    {
+        m_node = aOther.m_node;
+        m_oldRevision = aOther.m_oldRevision;
+        aOther.m_node = nullptr;
+
+        return *this;
     }
 
     void Reset()
@@ -610,7 +633,17 @@ public:
         }
     }
 
-    void Reset( NODE* aNode, REVISION* aAncestorRevision )
+    NODE* get() const
+    {
+        return m_node;
+    }
+
+    NODE* operator->() const
+    {
+        return m_node;
+    }
+
+    void Reset( NODE* aNode, const REVISION* aCheckoutRevision )
     {
         if( m_node ) {
             Reset();
@@ -619,18 +652,18 @@ public:
         if( aNode ) {
             m_node = aNode;
             m_oldRevision = m_node->GetRevision();
-            m_node->CheckoutRevision( aAncestorRevision );
+            m_node->CheckoutRevision( aCheckoutRevision );
         }
     }
 
-    ~SCOPED_REVERT()
+    ~SCOPED_CHECKOUT()
     {
         Reset();
     }
 
 private:
     NODE* m_node;
-    REVISION* m_oldRevision;
+    const REVISION* m_oldRevision;
 };
 
 
