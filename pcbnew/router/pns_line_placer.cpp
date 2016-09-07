@@ -809,11 +809,10 @@ bool LINE_PLACER::Move( const VECTOR2I& aP, ITEM* aEndItem )
 {
     LINE current;
     VECTOR2I p = aP;
-    bool item_deleted = false;
 
-    if( m_processedBranch.Owns( aEndItem ) ) {
-        item_deleted = true;
-    }
+    int eiDepth = -1;
+    if( aEndItem && aEndItem->Owner() )
+        eiDepth = aEndItem->Owner()->Depth();
 
     m_processedBranch.Reset();
 
@@ -826,9 +825,10 @@ bool LINE_PLACER::Move( const VECTOR2I& aP, ITEM* aEndItem )
     else
         m_currentEnd = current.CLine().CPoint( -1 );
 
+    int latestDepth = m_node->Depth();
     m_processedBranch.Reset( m_node );
 
-    if( aEndItem &&  !item_deleted && current.SegmentCount() )
+    if( eiDepth >= 0 && aEndItem && latestDepth > eiDepth && current.SegmentCount() )
     {
         splitAdjacentSegments( m_node, aEndItem, current.CPoint( -1 ) );
 
@@ -837,6 +837,7 @@ bool LINE_PLACER::Move( const VECTOR2I& aP, ITEM* aEndItem )
     }
 
     updateLeadingRatLine();
+
     return true;
 }
 

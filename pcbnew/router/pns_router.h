@@ -253,6 +253,8 @@ private:
 
     void markViolations( NODE* aNode, ITEM_SET& aCurrent, NODE::ITEM_VECTOR& aRemoved );
 
+    CHANGE_SET getVisualChangeSet();
+
     VECTOR2I m_currentEnd;
     RouterState m_state;
 

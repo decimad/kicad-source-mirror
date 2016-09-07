@@ -121,8 +121,12 @@ bool ROUTER::RoutingInProgress() const
 
 const ITEM_SET ROUTER::QueryHoverItems( const VECTOR2I& aP )
 {
-    // SCOPED_REVERT revert( &m_node, &m_world );
-    return m_node.HitTest( aP );
+    if( m_state == IDLE )
+        return m_node.HitTest( aP );
+    else
+    {
+        return m_placer->CurrentNode()->HitTest( aP );
+    }
 }
 
 bool ROUTER::StartDragging( const VECTOR2I& aP, ITEM* aStartItem )
@@ -253,6 +257,10 @@ void ROUTER::markViolations( NODE* aNode, ITEM_SET& aCurrent,
     }
 }
 
+CHANGE_SET ROUTER::getVisualChangeSet()
+{
+    return CHANGE_SET::FromPath( Path( &m_world, m_node.GetRevision() ) );
+}
 
 void ROUTER::updateView( NODE* aNode, ITEM_SET& aCurrent )
 {
@@ -265,7 +273,7 @@ void ROUTER::updateView( NODE* aNode, ITEM_SET& aCurrent )
     if( Settings().Mode() == RM_MarkObstacles )
         markViolations( aNode, aCurrent, removed );
 
-    CHANGE_SET changes = CHANGE_SET::FromPath( Path( &m_world, m_node.GetRevision() ) );
+    CHANGE_SET changes = getVisualChangeSet();
 
     for( auto item : changes.AddedItems() )
         m_iface->DisplayItem( item );
@@ -308,7 +316,7 @@ void ROUTER::movePlacing( const VECTOR2I& aP, ITEM* aEndItem )
 
     //ITEM_SET tmp( &current );
 
-    updateView( m_placer->CurrentNode( true ), current );
+    updateView( m_placer->CurrentNode( true ).get(), current );
 }
 
 
