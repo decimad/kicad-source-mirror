@@ -43,6 +43,10 @@ add_executable( bitmap2component WIN32 MACOSX_BUNDLE
     ${BITMAP2COMPONENT_RESOURCES}
     )
 
+if( MSVC )
+    set_target_properties( bitmap2component PROPERTIES FOLDER apps )
+endif()
+
 target_link_libraries( bitmap2component
     common
     polygon

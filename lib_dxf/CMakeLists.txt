@@ -10,3 +10,7 @@ set(LIBDXF_SRCS
     )
 
 add_library(lib_dxf STATIC ${LIBDXF_SRCS})
+
+if( MSVC )
+    set_target_properties( lib_dxf PROPERTIES FOLDER libs )
+endif() 

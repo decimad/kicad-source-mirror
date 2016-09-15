@@ -263,6 +263,36 @@ if( CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang" )
         set( CMAKE_LD_FLAGS "${CMAKE_LD_FLAGS} -headerpad_max_install_names") # needed by fixbundle
     endif()
 
+elseif( MSVC )
+    set(CMAKE_CXX_FLAGS "$(CMAKE_CXX_FLAGS) /D_USE_MATH_DEFINES /DBOOST_ALL_NO_LIB /DNOMINMAX /EHsc /wd4290 /wd4800 /wd4996")
+    set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
+    message( "I'm running for visual c++!" )
+    
+    MACRO(SOURCE_GROUP_BY_FOLDER base sources)
+      source_group("" FILES ${sources})
+      SET(SOURCE_GROUP_DELIMITER "/")
+      SET(last_dir "")
+      SET(files "")
+      FOREACH(file ${sources})
+        get_filename_component(absolute ${file} ABSOLUTE)
+        file(RELATIVE_PATH relative_file "${base}" ${absolute})
+        message( "Rel file: ${relative_file}" )
+        GET_FILENAME_COMPONENT(dir "${relative_file}" PATH)
+        IF (NOT "${dir}" STREQUAL "${last_dir}")
+          IF (files)
+            SOURCE_GROUP("${last_dir}" FILES ${files})
+          ENDIF (files)
+          SET(files "")
+        ENDIF (NOT "${dir}" STREQUAL "${last_dir}")
+        SET(files ${files} ${file})
+        SET(last_dir "${dir}")
+      ENDFOREACH(file)
+      IF (files)
+        SOURCE_GROUP("${last_dir}" FILES ${files})
+      ENDIF (files)
+    ENDMACRO(SOURCE_GROUP_BY_FOLDER)
+
 endif( CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang" )
 
 if( USE_WX_OVERLAY OR APPLE )
@@ -498,6 +528,10 @@ find_package( OpenGL REQUIRED )
 # Handle target used to specify if a target needs wx-widgets or other libraries
 # Always defined, empty if no libraries are to be built
 add_custom_target( lib-dependencies )
+
+if( MSVC )
+    set_target_properties( lib-dependencies PROPERTIES FOLDER libs )
+endif()
 
 #
 # Find GLEW library, required

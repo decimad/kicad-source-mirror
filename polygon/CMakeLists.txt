@@ -13,5 +13,9 @@ set(POLYGON_SRCS
 
 add_library(polygon STATIC ${POLYGON_SRCS})
 
+if( MSVC )
+    set_target_properties( polygon PROPERTIES FOLDER libs )
+endif() 
+
 add_dependencies( polygon lib-dependencies )
 

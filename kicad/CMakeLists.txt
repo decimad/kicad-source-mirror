@@ -48,6 +48,10 @@ add_executable( kicad WIN32 MACOSX_BUNDLE
     ${KICAD_RESOURCES}
     )
 
+if( MSVC )
+    set_target_properties( kicad PROPERTIES FOLDER apps )
+endif()
+    
 if( UNIX )
     # for build directory: create kiface symlinks so kicad (exe) can be run in-situ
     add_custom_target( kiface_sym_links

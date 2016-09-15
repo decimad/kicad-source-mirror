@@ -79,6 +79,10 @@ target_link_libraries( pl_editor
     ${wxWidgets_LIBRARIES}
     )
 
+if( MSVC )
+    set_target_properties( pl_editor PROPERTIES FOLDER apps/singletops )
+endif()    
+    
 if( MAKE_LINK_MAPS )
     set_target_properties( pl_editor PROPERTIES
         LINK_FLAGS "${TO_LINKER},-cref ${TO_LINKER},-Map=pl_editor.map" )
@@ -104,6 +108,11 @@ set_target_properties( pl_editor_kiface PROPERTIES
     PREFIX          ${KIFACE_PREFIX}
     SUFFIX          ${KIFACE_SUFFIX}
     )
+
+if( MSVC )
+    set_target_properties( pl_editor_kiface PROPERTIES FOLDER apps )
+endif()      
+    
 set_source_files_properties( pl_editor.cpp PROPERTIES
     # The KIFACE is in pcbnew.cpp, export it:
     COMPILE_DEFINITIONS     "BUILD_KIWAY_DLL;COMPILING_DLL"

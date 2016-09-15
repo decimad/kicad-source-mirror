@@ -155,6 +155,12 @@ set( PCBNEW_IMPORT_DXF
     import_dxf/dxf2brd_items.cpp
     )
 
+set( PCBNEW_IMPORT_DXF_HEADERS
+    import_dxf/dialog_dxf_import.h
+    import_dxf/dialog_dxf_import_base.h
+    import_dxf/dxf2brd_imtes.h
+    )
+
 set( PCBNEW_EXPORTERS
     exporters/export_d356.cpp
     exporters/export_gencad.cpp
@@ -163,6 +169,10 @@ set( PCBNEW_EXPORTERS
     exporters/gen_drill_report_files.cpp
     exporters/gen_modules_placefile.cpp
     exporters/gendrill_Excellon_writer.cpp
+    )
+
+set( PCBNEW_EXPORTERS_HEADERS
+    exporters/gendrill_Excellon_writer.h
     )
 
 set( PCBNEW_AUTOROUTER_SRCS
@@ -177,6 +187,63 @@ set( PCBNEW_AUTOROUTER_SRCS
     autorouter/solve.cpp
     autorouter/graphpcb.cpp
     autorouter/work.cpp
+    )
+
+set( PCBNEW_AUTOROUTER_HEADERS
+    autorouter/rect_placement/rect_placement.h
+    autorouter/autorout.h
+    autorouter/cell.h
+    )
+
+set( PCBNEW_TOOLS_SRCS
+    tools/selection_tool.cpp
+    tools/selection_area.cpp
+    tools/selection_conditions.cpp
+    tools/conditional_menu.cpp
+    tools/bright_box.cpp
+    tools/edit_points.cpp
+    tools/edit_constraints.cpp
+    tools/point_editor.cpp
+    tools/drawing_tool.cpp
+    tools/edit_tool.cpp
+    tools/pcbnew_control.cpp
+    tools/pcb_editor_control.cpp
+    tools/module_tools.cpp
+    tools/placement_tool.cpp
+    tools/common_actions.cpp
+    tools/grid_helper.cpp
+    tools/picker_tool.cpp
+    tools/zoom_tool.cpp
+    tools/tools_common.cpp
+
+    tools/grid_menu.cpp
+    tools/zoom_menu.cpp
+    tools/size_menu.cpp
+   )
+
+set( PCBNEW_TOOLS_HEADERS
+    tools/bright_box.h
+    tools/common_actions.h
+    tools/conditional_menu.h
+    tools/drawing_tool.h
+    tools/edit_constraints.h
+    tools/edit_points.h
+    tools/edit_tool.h
+    tools/grid_helper.h
+    tools/grid_menu.h
+    tools/module_tools.h
+    tools/pcb_editor_control.h
+    tools/pcb_tool.h
+    tools/pcbnew_control.h
+    tools/picker_tool.h
+    tools/placement_tool.h
+    tools/point_editor.h
+    tools/selection_area.h
+    tools/selection_conditions.h
+    tools/selection_tool.h
+    tools/size_menu.h
+    tools/zoom_menu.h
+    tools/zoom_tool.h
     )
 
 set( PCBNEW_CLASS_SRCS
@@ -274,33 +341,77 @@ set( PCBNEW_CLASS_SRCS
     zones_polygons_test_connections.cpp
     zones_test_and_combine_areas.cpp
     class_footprint_wizard.cpp
-
-    tools/selection_tool.cpp
-    tools/selection_area.cpp
-    tools/selection_conditions.cpp
-    tools/conditional_menu.cpp
-    tools/bright_box.cpp
-    tools/edit_points.cpp
-    tools/edit_constraints.cpp
-    tools/point_editor.cpp
-    tools/drawing_tool.cpp
-    tools/edit_tool.cpp
-    tools/pcbnew_control.cpp
-    tools/pcb_editor_control.cpp
-    tools/module_tools.cpp
-    tools/placement_tool.cpp
-    tools/common_actions.cpp
-    tools/grid_helper.cpp
-    tools/picker_tool.cpp
-    tools/zoom_tool.cpp
-    tools/tools_common.cpp
-
-    tools/grid_menu.cpp
-    tools/zoom_menu.cpp
-    tools/size_menu.cpp
     )
 
-set( PCBNEW_SRCS ${PCBNEW_AUTOROUTER_SRCS} ${PCBNEW_CLASS_SRCS} ${PCBNEW_DIALOGS} )
+set( PCBNEW_CLASS_HEADERS
+    array_creator.h
+    board_commit.h
+    board_item_container.h
+    board_netlist_updater.h
+    class_board.h
+    class_board_connected_item.h
+    class_dimension.h
+    class_drawsegment.h
+    class_edge_mod.h
+    class_footprint_wizard.h
+    class_marker_pcb.h
+    class_mire.h
+    class_module.h
+    class_netclass.h
+    class_netinfo.h
+    class_pad.h
+    class_pcb_layer_box_selector.h
+    class_pcb_layer_widget.h
+    class_pcb_text.h
+    class_text_mod.h
+    class_track.h
+    class_zone.h
+    class_zone_settings.h
+    collectors.h
+    connect.h
+    drag.h
+    drc_stuff.h
+    eagle_plugin.h
+    footprint_wizard_frame.h
+    gpcb_plugin.h
+    help_common_strings.h
+    hotkeys.h
+    invoke_pcb_dialog.h
+    io_mgr.h
+    kicad_plugin.h
+    layer_widget.h
+    legacy_plugin.h
+    minimun_spanning_tree.h
+    module_editor_frame.h
+    modview_frame.h
+    netlist_reader.h
+    pcb_base_edit_frame.h
+    pcb_draw_panel_gal.h
+    pcb_netlist.h
+    pcb_painter.h
+    pcb_parser.h
+    pcb_plot_params.h
+    pcbnew.h
+    pcbnew_config.h
+    pcbnew_id.h
+    pcbplot.h
+    plotcontroller.h
+    printout_controler.h
+    protos.h
+    ratsnest_data.h
+    ratsnest_viewitem.h
+    specctra.h
+    specctra_lexer.h
+    zones.h
+    zones_functions_for_undo_redo.h
+    )
+
+set( PCBNEW_SRCS
+    ${PCBNEW_AUTOROUTER_SRCS} ${PCBNEW_AUTOROUTER_HEADERS}
+    ${PCBNEW_CLASS_SRCS}      ${PCBNEW_CLASS_HEADERS}
+    ${PCBNEW_TOOLS_SRCS}      ${PCBNEW_TOOLS_HEADERS}
+    ${PCBNEW_DIALOGS}
+    )
 
 
 # extra sources from common
@@ -599,9 +710,17 @@ target_link_libraries( pcbnew
     ${wxWidgets_LIBRARIES}
     )
 
+if( MSVC )
+    set_target_properties (pcbnew PROPERTIES FOLDER apps/singletops )
+endif()
+
 if( MAKE_LINK_MAPS )
     set_target_properties( pcbnew PROPERTIES
         LINK_FLAGS "${TO_LINKER},-cref ${TO_LINKER},-Map=pcbnew.map" )
+endif()
+
+if( MSVC )
+    SOURCE_GROUP_BY_FOLDER( "${PROJECT_SOURCE_DIR}/pcbnew" "pcbnew.cpp;${PCBNEW_SRCS};${PCBNEW_COMMON_SRCS};${PCBNEW_SCRIPTING_SRCS}" )
 endif()
 
 # the main pcbnew program, in DSO form.
@@ -623,6 +742,10 @@ if( ${OPENMP_FOUND} )
     set_target_properties( pcbnew_kiface PROPERTIES
         COMPILE_FLAGS   ${OpenMP_CXX_FLAGS}
         )
+endif()
+
+if( MSVC )
+    set_target_properties (pcbnew_kiface PROPERTIES FOLDER apps )
 endif()
 
 target_link_libraries( pcbnew_kiface

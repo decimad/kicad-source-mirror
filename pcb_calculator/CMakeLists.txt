@@ -70,6 +70,10 @@ target_link_libraries( pcb_calculator
     bitmaps
     ${wxWidgets_LIBRARIES}
     )
+    
+if( MSVC )
+    set_target_properties ( pcb_calculator PROPERTIES FOLDER apps/singletops )
+endif()
 
 if( MAKE_LINK_MAPS )
     set_target_properties( pcb_calculator PROPERTIES
@@ -96,6 +100,10 @@ set_source_files_properties( pcb_calculator.cpp PROPERTIES
     # The KIFACE is in pcb_calculator.cpp, export it:
     COMPILE_DEFINITIONS     "BUILD_KIWAY_DLL;COMPILING_DLL"
     )
+    
+if( MSVC )
+    set_target_properties ( pcb_calculator_kiface PROPERTIES FOLDER apps )
+endif()
 
 if( MAKE_LINK_MAPS )
     set_target_properties( pcb_calculator_kiface PROPERTIES
@@ -163,6 +171,10 @@ add_custom_target(
         ${CMAKE_CURRENT_SOURCE_DIR}/pcb_calculator_datafile_lexer.h
         ${CMAKE_CURRENT_SOURCE_DIR}/pcb_calculator_datafile_keywords.cpp
 )
+
+if( MSVC )
+    set_target_properties ( pcb_calculator_lexer_source_files PROPERTIES FOLDER generated/lexer )
+endif()
 
 #
 # Conversion of .html doc source files to .h files included in cpp sources

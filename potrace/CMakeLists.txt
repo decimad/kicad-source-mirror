@@ -14,3 +14,7 @@ set(POTRACE_SRCS
     )
 
 add_library(potrace STATIC ${POTRACE_SRCS})
+
+if( MSVC )
+    set_target_properties( potrace PROPERTIES FOLDER libs )
+endif() 

@@ -67,6 +67,10 @@ add_library( s3d_plugin_vrml MODULE
 
 target_link_libraries( s3d_plugin_vrml kicad_3dsg ${OPENGL_LIBRARIES} ${wxWidgets_LIBRARIES} )
 
+if( MSVC )
+    set_target_properties( s3d_plugin_vrml PROPERTIES FOLDER plugins )
+endif() 
+
 if( APPLE )
     # puts library into the main kicad.app bundle in build tree
     set_target_properties( s3d_plugin_vrml PROPERTIES

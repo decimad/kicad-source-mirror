@@ -37,6 +37,10 @@ target_link_libraries( github_plugin
     common
     )
 
+if( MSVC )
+    set_target_properties( github_plugin PROPERTIES FOLDER plugins )
+endif()
+
 if( MINGW )
     target_link_libraries( github_plugin
         ${wxWidgets_LIBRARIES}

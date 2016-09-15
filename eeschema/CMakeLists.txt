@@ -276,6 +276,10 @@ target_link_libraries( eeschema
     ${wxWidgets_LIBRARIES}
     )
 
+if( MSVC )
+    set_target_properties ( eeschema PROPERTIES FOLDER apps/singletops )
+endif()
+    
 # the DSO (KIFACE) housing the main eeschema code:
 add_library( eeschema_kiface MODULE
     ${EESCHEMA_SRCS}
@@ -303,6 +307,10 @@ set_source_files_properties( eeschema.cpp PROPERTIES
     COMPILE_DEFINITIONS     "BUILD_KIWAY_DLL;COMPILING_DLL"
     )
 
+if( MSVC )
+    set_target_properties ( eeschema_kiface PROPERTIES FOLDER apps )
+endif()    
+    
 # if building eeschema, then also build eeschema_kiface if out of date.
 add_dependencies( eeschema eeschema_kiface )
 
@@ -374,6 +382,10 @@ add_custom_target(
         ${CMAKE_CURRENT_SOURCE_DIR}/cmp_library_keywords.cpp
     )
 
+if( MSVC )
+    set_target_properties ( cmp_library_lexer_source_files PROPERTIES FOLDER generated/lexer )
+endif()
+    
 add_dependencies( eeschema_kiface cmp_library_lexer_source_files )
 
 make_lexer(
@@ -393,6 +405,10 @@ add_custom_target(
         ${CMAKE_CURRENT_SOURCE_DIR}/template_fieldnames_keywords.cpp
     )
 
+if( MSVC )
+    set_target_properties ( field_template_lexer_source_files PROPERTIES FOLDER generated/lexer )
+endif()    
+    
 add_dependencies( eeschema_kiface field_template_lexer_source_files )
 
 make_lexer(
@@ -412,6 +428,10 @@ add_custom_target(
         ${CMAKE_CURRENT_SOURCE_DIR}/dialogs/dialog_bom_cfg_keywords.cpp
     )
 
+if( MSVC )
+    set_target_properties ( dialog_bom_cfg_lexer_source_files PROPERTIES FOLDER generated/lexer )
+endif() 
+    
 add_dependencies( eeschema_kiface dialog_bom_cfg_lexer_source_files )
 
 add_subdirectory( plugins )

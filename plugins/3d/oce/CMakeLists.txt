@@ -23,6 +23,10 @@ add_library( s3d_plugin_oce MODULE
 
 target_link_libraries( s3d_plugin_oce kicad_3dsg ${LIBS_OCE} ${wxWidgets_LIBRARIES} )
 
+if( MSVC )
+    set_target_properties( s3d_plugin_oce PROPERTIES FOLDER plugins )
+endif() 
+
 if( APPLE )
     # puts library into the main kicad.app bundle in build tree
     set_target_properties( s3d_plugin_oce PROPERTIES

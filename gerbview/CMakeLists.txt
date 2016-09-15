@@ -105,6 +105,10 @@ target_link_libraries( gerbview
     ${wxWidgets_LIBRARIES}
     )
 
+if( MSVC )
+    set_target_properties (gerbview PROPERTIES FOLDER apps/singletops )
+endif()    
+    
 if( MAKE_LINK_MAPS )
     set_target_properties( gerbview PROPERTIES
         LINK_FLAGS "${TO_LINKER},-cref ${TO_LINKER},-Map=gerbview.map" )
@@ -134,6 +138,10 @@ set_source_files_properties( gerbview.cpp PROPERTIES
     # The KIFACE is in gerbview.cpp, export it:
     COMPILE_DEFINITIONS     "BUILD_KIWAY_DLL;COMPILING_DLL"
     )
+    
+if( MSVC )
+    set_target_properties (gerbview_kiface PROPERTIES FOLDER apps )
+endif()
 
 if( MAKE_LINK_MAPS )
     set_target_properties( gerbview_kiface PROPERTIES

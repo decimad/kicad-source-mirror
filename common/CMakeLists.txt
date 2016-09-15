@@ -36,6 +36,10 @@ add_custom_target(
     DEPENDS gal/opengl/shader_src.h
     )
 
+if( MSVC )
+    set_target_properties( shader_headers PROPERTIES FOLDER generated )
+endif()
+
 set( GAL_SRCS
     # Common part
     basic_gal.cpp
@@ -73,6 +77,10 @@ add_library( gal STATIC ${GAL_SRCS} )
 add_dependencies( gal shader_headers )
 add_dependencies( gal lib-dependencies )
 
+if( MSVC )
+    set_target_properties (gal PROPERTIES FOLDER libs )
+endif()
+
 target_link_libraries( gal
     ${GLEW_LIBRARIES}
     ${CAIRO_LIBRARIES}
@@ -100,6 +108,9 @@ add_library( singletop STATIC EXCLUDE_FROM_ALL
     kiway_holder.cpp
     )
 
+if( MSVC )
+    set_target_properties (singletop PROPERTIES FOLDER apps/singletops )
+endif()
 
 # A shared library used by multiple *.kiface files and one or two program
 # launchers.  Object files can migrate into here over time, but only if they are
@@ -314,6 +325,9 @@ target_link_libraries( common
     ${OPENSSL_LIBRARIES}        # empty on Apple
     )
 
+if( MSVC )
+    set_target_properties (common PROPERTIES FOLDER libs )
+endif()
 
 set( PCB_COMMON_SRCS
     base_screen.cpp
@@ -384,6 +398,10 @@ set_source_files_properties( ${PCB_COMMON_SRCS} PROPERTIES
 add_library( pcbcommon STATIC ${PCB_COMMON_SRCS} )
 add_dependencies( pcbcommon lib-dependencies )
 
+if( MSVC )
+    set_target_properties (pcbcommon PROPERTIES FOLDER libs )
+endif()
+
 # auto-generate specctra_lexer.h and specctra_keywords.cpp
 make_lexer(
     ${PROJECT_SOURCE_DIR}/pcbnew/specctra.keywords
@@ -401,6 +419,10 @@ add_custom_target(
         ${PROJECT_SOURCE_DIR}/pcbnew/specctra_lexer.h
         ${PROJECT_SOURCE_DIR}/pcbnew/specctra_keywords.cpp
     )
+
+if( MSVC )
+    set_target_properties ( specctra_lexer_source_files PROPERTIES FOLDER generated/lexer )
+endif()
 
 add_dependencies( pcbcommon specctra_lexer_source_files )
 
@@ -422,6 +444,10 @@ add_custom_target(
         ${CMAKE_CURRENT_SOURCE_DIR}/netlist_keywords.cpp
     )
 
+if( MSVC )
+    set_target_properties ( netlist_lexer_source_files PROPERTIES FOLDER generated/lexer )
+endif()
+
 add_dependencies( common netlist_lexer_source_files )
 add_dependencies( pcbcommon netlist_lexer_source_files )
 
@@ -441,7 +467,12 @@ add_custom_target(
     DEPENDS
         ${PROJECT_SOURCE_DIR}/include/pcb_plot_params_lexer.h
         ${CMAKE_CURRENT_SOURCE_DIR}/pcb_plot_params_keywords.cpp
+netlist_lexer_source_files
     )
+
+if( MSVC )
+    set_target_properties ( pcb_plot_lexer_source_files PROPERTIES FOLDER generated/lexer )
+endif()
 
 add_dependencies( pcbcommon pcb_plot_lexer_source_files )
 
@@ -463,6 +494,11 @@ add_custom_target(
         ${CMAKE_CURRENT_SOURCE_DIR}/pcb_keywords.cpp
     )
 
+if( MSVC )
+    set_target_properties ( pcb_lexer_source_files PROPERTIES FOLDER generated/lexer )
+endif()
+
+
 add_dependencies( pcbcommon pcb_lexer_source_files )
 
 # auto-generate pcbnew s-expression footprint library table code.
@@ -479,6 +515,10 @@ add_custom_target(
         ${PROJECT_SOURCE_DIR}/include/fp_lib_table_lexer.h
         ${CMAKE_CURRENT_SOURCE_DIR}/fp_lib_table_keywords.cpp
     )
+
+if( MSVC )
+    set_target_properties ( fp_lib_table_lexer_source_files PROPERTIES FOLDER generated/lexer )
+endif()
 
 add_dependencies( pcbcommon fp_lib_table_lexer_source_files )
 
@@ -498,14 +538,24 @@ add_custom_target(
         ${CMAKE_CURRENT_SOURCE_DIR}/page_layout/page_layout_reader_keywords.cpp
     )
 
+if( MSVC )
+    set_target_properties ( page_layout_lexer_source_files PROPERTIES FOLDER generated/lexer )
+endif()
+
 add_dependencies( common page_layout_lexer_source_files )
+
 
 # This one gets made only when testing.
 # to build it, first enable #define STAND_ALONE at top of dsnlexer.cpp
 add_executable( dsntest EXCLUDE_FROM_ALL dsnlexer.cpp )
 target_link_libraries( dsntest common ${wxWidgets_LIBRARIES} rt )
-
 add_dependencies( dsntest lib-dependencies )
+
+set_target_properties(dsntest PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)
+
+if( MSVC )
+    set_target_properties( dsntest PROPERTIES FOLDER various )
+endif()
 
 target_link_libraries( pcbcommon 3d-viewer )
 

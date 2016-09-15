@@ -765,3 +765,7 @@ endforeach()
 
 #add_library( bitmaps SHARED ${CPP_LIST} )
 add_library( bitmaps STATIC ${CPP_LIST} )
+
+if( MSVC )
+    set_target_properties (bitmaps PROPERTIES FOLDER generated/resources )
+endif()

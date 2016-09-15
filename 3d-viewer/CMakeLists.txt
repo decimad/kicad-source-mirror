@@ -111,4 +111,8 @@ add_dependencies( 3d-viewer pcbcommon )
 
 target_link_libraries( 3d-viewer ${Boost_} ${wxWidgets_LIBRARIES} ${OPENGL_LIBRARIES} kicad_3dsg )
 
+if( MSVC )
+    set_target_properties( 3d-viewer PROPERTIES FOLDER plugins )
+endif()
+
 add_subdirectory( 3d_cache )

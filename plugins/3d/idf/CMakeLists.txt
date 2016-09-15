@@ -24,6 +24,10 @@ add_library( s3d_plugin_idf MODULE
 
 target_link_libraries( s3d_plugin_idf kicad_3dsg idf3 ${OPENGL_LIBRARIES} ${wxWidgets_LIBRARIES} )
 
+if( MSVC )
+    set_target_properties( s3d_plugin_idf PROPERTIES FOLDER plugins )
+endif() 
+
 if( APPLE )
     # puts library into the main kicad.app bundle in build tree
     set_target_properties( s3d_plugin_idf PROPERTIES

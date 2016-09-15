@@ -148,6 +148,10 @@ target_link_libraries( cvpcb_kiface
     ${OPENMP_LIBRARIES}         # used by 3d viewer
     )
 
+if( MSVC )
+    set_target_properties (cvpcb_kiface PROPERTIES FOLDER apps )
+endif()
+    
 if( BUILD_GITHUB_PLUGIN )
     target_link_libraries( cvpcb_kiface github_plugin )
 endif()

@@ -29,6 +29,10 @@ add_library( kicad_3dsg SHARED
     ifsg_api.cpp
 )
 
+if( MSVC )
+    set_target_properties( kicad_3dsg PROPERTIES FOLDER libs )
+endif()
+
 if( APPLE )
     # puts library into the main kicad.app bundle in build tree
     set_target_properties( kicad_3dsg PROPERTIES
