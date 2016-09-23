@@ -638,6 +638,8 @@ SHOVE::SHOVE_STATUS SHOVE::pushVia( VIA* aVia, const VECTOR2I& aForce, int aCurr
 
             lp.first = assembleLine( seg, &segIndex );
 
+//  ---  For every incoming line
+
             if( lp.first.HasLockedSegments() )
                 return SH_TRY_WALK;
 

@@ -109,7 +109,7 @@ void ROUTER::ResetWorld()
 void ROUTER::ClearWorld()
 {
     m_placer.reset();
-    m_node.RevertToRevision( &m_world );
+    m_node.Clear();
 }
 
 
