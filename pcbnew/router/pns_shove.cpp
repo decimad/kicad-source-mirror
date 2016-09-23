@@ -628,6 +628,7 @@ SHOVE::SHOVE_STATUS SHOVE::pushVia( VIA* aVia, const VECTOR2I& aForce, int aCurr
     pushedVia->SetPos( p0_pushed );
     pushedVia->Mark( aVia->Marker() );
 
+// -for( auto assembled : jt->IncomingLines( true ) )
     for( ITEM* item : jt->LinkList() )
     {
         if( SEGMENT* seg = dyn_cast<SEGMENT*>( item ) )
@@ -645,8 +646,12 @@ SHOVE::SHOVE_STATUS SHOVE::pushVia( VIA* aVia, const VECTOR2I& aForce, int aCurr
             if( segIndex == 0 )
                 lp.first.Reverse();
 
+ // ---- For every incoming (ends in jt) line that doesn't have a locked segment
+
             lp.second = lp.first;
             lp.second.ClearSegmentLinks();
+            // p0 should always be the coordinates of the last point of the line
+            // which could be any point of the last segment
             lp.second.DragCorner( p0_pushed, lp.second.CLine().Find( p0 ) );
             lp.second.AppendVia( *pushedVia );
             draggedLines.push_back( lp );
@@ -698,6 +703,10 @@ SHOVE::SHOVE_STATUS SHOVE::pushVia( VIA* aVia, const VECTOR2I& aForce, int aCurr
             replaceLine( lp.first, lp.second );
             lp.second.SetRank( aCurrentRank - 1 );
 
+            // push line returns false if the line is not
+            // properly linked to the spatial state
+            // however that cannot happen, because we linked
+            // it two lines above.
             if( !pushLine( lp.second, true ) )
                 return SH_INCOMPLETE;
         }
@@ -955,6 +964,8 @@ SHOVE::SHOVE_STATUS SHOVE::shoveIteration( int aIter )
 
     if( !ni->OfKind( ITEM::SOLID_T ) && ni->Rank() >= 0 && ni->Rank() > currentLine.Rank() )
     {
+        // Kollision mit einem Item, das bereits seine Tests bestanden hat (also müssen wir
+        // uns anpassen).
         switch( ni->Kind() )
         {
         case ITEM::VIA_T:
@@ -994,6 +1005,8 @@ SHOVE::SHOVE_STATUS SHOVE::shoveIteration( int aIter )
     }
     else
     { // "forward" collisions
+        // Kollision mit einem Item, das noch nicht platziert wurde in diesem Shove-Durchlauft,
+        // also noch bewegt werden kann.
         switch( ni->Kind() )
         {
         case ITEM::SEGMENT_T:
